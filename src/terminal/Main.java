@@ -29,5 +29,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+
 public class Main {
+    public static void main(String[] args){
+        System.out.println("Hello JavaCard");
+        Communication t = new Communication();
+        t.send();
+    }
 }
