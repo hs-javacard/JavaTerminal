@@ -9,12 +9,26 @@ public class Communication {
 
     }
 
-    public ResponseAPDU send(/*byte ins*/){
+    public ResponseAPDU sendINS(byte ins){
         //TODO: add try block
-        byte[] d = {1,2,3,4, -127, 10};
-        CommandAPDU apdu = new CommandAPDU(0, 3, 0, 0, d,4);
+        CommandAPDU apdu = new CommandAPDU(0, ins, 0, 0, 5);
         ResponseAPDU response = new ResponseAPDU(fake.transit(apdu));
         return response;
     }
+
+    public ResponseAPDU send(byte cla, byte ins, byte p1, byte p2, byte ne){
+        //TODO: add try block
+        CommandAPDU apdu = new CommandAPDU(cla, ins, p1, p2, ne);
+        ResponseAPDU response = new ResponseAPDU(fake.transit(apdu));
+        return response;
+    }
+
+    public ResponseAPDU sendData(byte cla, byte ins, byte p1, byte p2, byte[] data, byte ne){
+        //TODO: add try block
+        CommandAPDU apdu = new CommandAPDU(cla, ins, p1, p2, data, ne);
+        ResponseAPDU response = new ResponseAPDU(fake.transit(apdu));
+        return response;
+    }
+
     FakeCard fake = new FakeCard();
 }

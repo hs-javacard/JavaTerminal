@@ -18,23 +18,28 @@ public class FakeCard {
     public byte[] process(CommandAPDU apdu)throws ISOException{
         byte[] buffer = apdu.getBytes();
         byte ins = buffer[OFFSET_INS];
+        byte[] response = {0,0,0,0,0};
 
         switch (ins) {
             case 0x00:
-                System.out.println("--- Instruction 0 ---");
+                System.out.println("FakeCard --- Instruction 0 ---");
                 printAPDU(apdu);
                 break;
             case 0x01:
+                System.out.println("FakeCard --- Instruction 1 ---");
+                printAPDU(apdu);
                 break;
             case 0x02:
+                System.out.println("FakeCard --- Instruction 2 ---");
+                printAPDU(apdu);
                 break;
             default:
-                System.out.println("ERROR: Unknown Instruction");
+                System.out.println("FakeCard --- ERROR: Unknown Instruction");
                 printAPDU(apdu);
                 break;
         }
 
-        return buffer;
+        return response;
     }
 
     public void printAPDU(CommandAPDU apdu){
@@ -56,7 +61,6 @@ public class FakeCard {
         String result = "[";
         for(byte b: a)
             result += String.format("0x%02X", b) + ",";
-
         result = result.substring(0, result.length() - 1) + "]";
         return result;
     }

@@ -34,6 +34,8 @@ public class Main {
     public static void main(String[] args){
         System.out.println("Hello JavaCard");
         Communication t = new Communication();
-        t.send();
+        t.sendINS((byte) 1);
+        byte[] data = {0,5,10,15};
+        t.sendData((byte) 0,(byte) 2,(byte) 0,(byte) 0, data,(byte) 5);
     }
 }
