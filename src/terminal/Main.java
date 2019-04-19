@@ -12,7 +12,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
-
+import javacard.framework.*;
 
 
 import javax.smartcardio.Card;
@@ -34,8 +34,13 @@ public class Main {
     public static void main(String[] args){
         System.out.println("Hello JavaCard");
         Communication t = new Communication();
-        t.sendINS((byte) 1);
+        t.init();
+        ResponseAPDU res = t.sendINS((byte) 1);
+        System.out.println(res.getBytes());
+
+        /*
         byte[] data = {0,5,10,15};
         t.sendData((byte) 0,(byte) 2,(byte) 0,(byte) 0, data,(byte) 5);
+        */
     }
 }
