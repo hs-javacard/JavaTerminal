@@ -10,7 +10,7 @@ public class BaseTerminal{
 
 }
 
-public class InitializationTerminal extends BaseTerminal{
+class InitializationTerminal extends BaseTerminal{
 
     public void InitializationTerminal(){
 
@@ -29,7 +29,7 @@ public class InitializationTerminal extends BaseTerminal{
     }
 }
 
-public class ReloadTerminal extends BaseTerminal{
+class ReloadTerminal extends BaseTerminal{
 
     public void ReloadTerminal(){
 
@@ -49,7 +49,7 @@ public class ReloadTerminal extends BaseTerminal{
 
 }
 
-public class PaymentTerminal extends BaseTerminal{
+class PaymentTerminal extends BaseTerminal{
 
     private short hardLimit;
 
@@ -63,5 +63,7 @@ public class PaymentTerminal extends BaseTerminal{
 
     private boolean checkPIN(short pin){
         //Only needed when over soft limit
+
+        return true;
     }
 }

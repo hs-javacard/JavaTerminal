@@ -2,9 +2,9 @@ package terminal;
 
 import javacard.framework.*;
 
-public class protocol{
+public class Protocol{
 
-    public void protocol(){
+    public void Protocol(){
 
     }
 
