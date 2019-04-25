@@ -11,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Arrays;
 import java.util.List;
 import javacard.framework.*;
 
@@ -29,18 +30,20 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import static javacard.framework.ISO7816.*;
+
 
 public class Main {
     public static void main(String[] args){
         System.out.println("Hello JavaCard");
         Communication t = new Communication();
         t.init();
-        ResponseAPDU res = t.sendINS((byte) 1);
-        System.out.println(res.getBytes());
+        ResponseAPDU res = t.sendINS((byte) 0);
+        t.printAPDU(res.getBytes());
 
-        /*
         byte[] data = {0,5,10,15};
-        t.sendData((byte) 0,(byte) 2,(byte) 0,(byte) 0, data,(byte) 5);
-        */
+        res = t.sendData((byte) 0,(byte) 0,(byte) 0,(byte) 4, data,(byte) 5);
+        t.printAPDU(res.getBytes());
     }
 }
+

@@ -3,6 +3,7 @@ package terminal;
 import javacard.framework.*;
 
 import javax.smartcardio.CommandAPDU;
+import java.util.Arrays;
 
 public class EPApplet extends Applet implements ISO7816 {
 
@@ -19,7 +20,6 @@ public class EPApplet extends Applet implements ISO7816 {
     }
 
     public void process(APDU apdu) throws ISOException {
-        printAPDU(apdu.getBuffer());
         byte[] buffer = apdu.getBuffer();
         byte ins = buffer[OFFSET_INS];
         byte p1 = buffer[OFFSET_P1];
@@ -28,6 +28,7 @@ public class EPApplet extends Applet implements ISO7816 {
             return;
         }
 
+        printAPDU(apdu.getBuffer());
         switch (ins) {
             case 0: // increment balance
                 System.out.println("Instuction 0");
@@ -42,7 +43,7 @@ public class EPApplet extends Applet implements ISO7816 {
 
 //        Util.setShort(buffer, OFFSET_CDATA, balance);
 //        Util.setShort(buffer, OFFSET_LC,  (short) 2);
-        System.out.println(buffer);
+        //System.out.println(buffer);
 
 
         short le = -1;
@@ -81,19 +82,15 @@ public class EPApplet extends Applet implements ISO7816 {
     }
 
     public void printAPDU(byte[] buffer){
-        CommandAPDU apdu = new CommandAPDU(buffer);
-        String CLA = String.format("0x%02X", apdu.getCLA());
-        String INS = String.format("0x%02X", apdu.getINS());
-        String P1 = String.format("0x%02X", apdu.getP1());
-        String P2 = String.format("0x%02X", apdu.getP2());
-        String Lc = String.format("0x%02X", apdu.getNc());
-        String Le = String.format("0x%02X", apdu.getNe());
+        String CLA = String.format("0x%02X", buffer[OFFSET_CLA]);
+        String INS = String.format("0x%02X", buffer[OFFSET_INS]);
+        String P1 = String.format("0x%02X", buffer[OFFSET_P1]);
+        String P2 = String.format("0x%02X", buffer[OFFSET_P2]);
+        String Lc = String.format("0x%02X", buffer[OFFSET_LC]);
 
-        System.out.println("CLA: " + CLA + " | INS: " + INS + " | P1: " + P1 + " | P2: " + P2 + " | Le: " + Le);
-
-        if(apdu.getNc() > 0){
-            System.out.println("Lc: " + Lc + " | DATA: " + byteArrayToHex(apdu.getData()));
-        }
+        System.out.println("----------- Card Simulator -----------");
+        System.out.println("CLA: " + CLA + " | INS: " + INS + " | P1: " + P1 + " | P2: " + P2 + " | Lc: " + Lc
+                + " | DATA: " + byteArrayToHex(Arrays.copyOfRange(buffer, OFFSET_CDATA,buffer.length)));
     }
 
     public static String byteArrayToHex(byte[] a) {
