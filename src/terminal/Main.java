@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import javacard.framework.*;
 
-
 import javax.smartcardio.Card;
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
@@ -33,8 +32,23 @@ import javax.swing.JTextField;
 import static javacard.framework.ISO7816.*;
 
 
+
 public class Main {
+
+    static final String TITLE = "Base Terminal";
+    static JFrame frame = new JFrame(TITLE);
+    static Container c = frame.getContentPane();
+
     public static void main(String[] args){
+
+        PaymentTerminal panel = new PaymentTerminal(frame);
+        c.add(panel);
+        frame.setResizable(false);
+        frame.pack();
+        frame.setVisible(true);
+
+
+        /*
         System.out.println("Hello JavaCard");
         Communication t = new Communication();
         t.init();
@@ -42,8 +56,41 @@ public class Main {
         t.printAPDU(res.getBytes());
 
         byte[] data = {0,5,10,15};
-        res = t.sendData((byte) 0,(byte) 0,(byte) 0,(byte) 4, data,(byte) 5);
+        res = t.sendData((byte) 1,(byte) 0,(byte) 0,(byte) 4, data,(byte) 5);
         t.printAPDU(res.getBytes());
+        */
+    }
+
+    public static void switchToPT(){
+        PaymentTerminal panel = new PaymentTerminal(frame);
+        c.removeAll();
+        c.repaint();
+        c.revalidate();
+        c.add(panel);
+        c.repaint();
+        c.revalidate();
+    }
+
+    public static void switchToRT(){
+        ReloadTerminal panel = new ReloadTerminal(frame);
+        c.removeAll();
+        c.repaint();
+        c.revalidate();
+        c.add(panel);
+        c.repaint();
+        c.revalidate();
+    }
+
+    public static void switchToIT(){
+        /*
+        InitializationTerminal panel = new InitializationTerminal(frame);
+        c.removeAll();
+        c.repaint();
+        c.revalidate();
+        c.add(panel);
+        c.repaint();
+        c.revalidate();
+        */
     }
 }
 

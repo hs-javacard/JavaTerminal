@@ -2,14 +2,10 @@ package terminal;
 
 import javacard.framework.*;
 
-public class BaseTerminal{
-
-    public void BaseTerminal(){
-
-        }
+public interface BaseTerminal{
 
 }
-
+/*
 class InitializationTerminal extends BaseTerminal{
 
     public void InitializationTerminal(){
@@ -67,3 +63,4 @@ class PaymentTerminal extends BaseTerminal{
         return true;
     }
 }
+*/
