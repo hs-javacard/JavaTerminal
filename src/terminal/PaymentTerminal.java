@@ -1,11 +1,7 @@
 package terminal;
 
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container.*;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -13,9 +9,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.List;
-import javax.smartcardio.CommandAPDU;
-import javax.swing.*;
 import java.awt.*;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -56,16 +49,51 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                 String str = ((JButton) src).getText();
                 switch (str){
                     case "STOP":
-                        displayString = "";
-                        setText(displayString);
+                        firstDisplayString = "To Be Paid:";
+                        secondDisplayString = "";
+                        thirdDisplayString = "";
+                        updateText();
+                        status = STATUS.ToBePaid;
                         break;
                     case "OK":
-                        displayString = "PIN sent to card";
-                        setText(displayString);
+                        switch(status){
+                            case ToBePaid:
+                                int amountToBePaid = Integer.parseInt(secondDisplayString);
+                                System.out.println("To Be Paid Amount: " + Integer.toString(amountToBePaid));
+                                firstDisplayString = "To Be Paid: " + secondDisplayString;
+                                secondDisplayString = "Input PIN: ";
+                                status = STATUS.InputPIN;
+                                break;
+                            case InputPIN:
+                                int pin = Integer.parseInt(thirdDisplayString);
+                                System.out.println("User PIN input: " + Integer.toString(pin));
+                                firstDisplayString = "PIN sent to card";
+                                secondDisplayString = "";
+                                thirdDisplayString = "";
+                                status = STATUS.HasPaid;
+                                break;
+                            case HasPaid:
+                                firstDisplayString = "To Be Paid:";
+                                secondDisplayString = "";
+                                thirdDisplayString = "";
+                                status = STATUS.ToBePaid;
+                                break;
+                        }
+                        updateText();
                         break;
                     case "CORR":
-                        displayString = "";
-                        setText(displayString);
+                        switch(status){
+                            case ToBePaid:
+                                secondDisplayString = "";
+                                break;
+                            case InputPIN:
+                                thirdDisplayString = "";
+                                break;
+                            case HasPaid:
+
+                                break;
+                        }
+                        updateText();
                         break;
                     case "RT":
                         switchToRT();
@@ -77,47 +105,72 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                         switchToIT();
                         break;
                     default:
-                        displayString += str;
-                        setText(displayString);
+                        switch(status){
+                            case ToBePaid:
+                                secondDisplayString += str;
+                                break;
+                            case InputPIN:
+                                thirdDisplayString += str;
+                                break;
+                            case HasPaid:
+
+                                break;
+                        }
+                        updateText();
                         break;
                 }
             }
         } catch (Exception e) {
             System.out.println(MSG_ERROR);
+            firstDisplayString = MSG_ERROR;
+            secondDisplayString = MSG_ERROR;
+            thirdDisplayString = MSG_ERROR;
+            updateText();
+            status = STATUS.ToBePaid;
         }
     }
 
-    String getText() {
-        return display.getText();
-    }
-
-    void setText(String txt) {
-        display.setText(txt);
-    }
-
-    void setText(int n) {
-        setText(Integer.toString(n));
+    void updateText(){
+        firstDisplay.setText(firstDisplayString);
+        secondDisplay.setText(secondDisplayString);
+        thirdDisplay.setText(thirdDisplayString);
     }
 
     void buildGUI(JFrame parent) {
-        setLayout(new BorderLayout());
+        setLayout(new GridBagLayout());
 
-        helpDisplay = new JTextField(DISPLAY_WIDTH);
-        helpDisplay.setHorizontalAlignment(JTextField.RIGHT);
-        helpDisplay.setEditable(false);
-        helpDisplay.setFont(FONT);
-        helpDisplay.setBackground(Color.darkGray);
-        helpDisplay.setForeground(Color.green);
-        add(helpDisplay, BorderLayout.NORTH);
-        helpDisplay.setText("Input PIN:");
+        GridBagConstraints gbc = new GridBagConstraints();
+        firstDisplay = new JTextField(DISPLAY_WIDTH);
+        firstDisplay.setHorizontalAlignment(JTextField.LEFT);
+        firstDisplay.setEditable(false);
+        firstDisplay.setFont(FONT);
+        firstDisplay.setBackground(Color.darkGray);
+        firstDisplay.setForeground(Color.green);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        add(firstDisplay,gbc);
+        firstDisplayString = "To Be Paid:";
+        firstDisplay.setText(firstDisplayString);
 
-        display = new JTextField(DISPLAY_WIDTH);
-        display.setHorizontalAlignment(JTextField.RIGHT);
-        display.setEditable(false);
-        display.setFont(FONT);
-        display.setBackground(Color.darkGray);
-        display.setForeground(Color.green);
-        add(display, BorderLayout.CENTER);
+        secondDisplay = new JTextField(DISPLAY_WIDTH);
+        secondDisplay.setHorizontalAlignment(JTextField.RIGHT);
+        secondDisplay.setEditable(false);
+        secondDisplay.setFont(FONT);
+        secondDisplay.setBackground(Color.darkGray);
+        secondDisplay.setForeground(Color.green);
+        gbc.gridy++;
+        add(secondDisplay,gbc);
+
+        thirdDisplay = new JTextField(DISPLAY_WIDTH);
+        thirdDisplay.setHorizontalAlignment(JTextField.RIGHT);
+        thirdDisplay.setEditable(false);
+        thirdDisplay.setFont(FONT);
+        thirdDisplay.setBackground(Color.darkGray);
+        thirdDisplay.setForeground(Color.green);
+        gbc.gridy++;
+        add(thirdDisplay, gbc);
         keypad = new JPanel(new GridLayout(5, 3));
 
         key("1");
@@ -145,7 +198,9 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
         key("OK");
         key(null);
 
-        add(keypad, BorderLayout.SOUTH);
+        gbc.gridy++;
+
+        add(keypad, gbc);
         parent.addWindowListener(new CloseEventListener());
     }
 
@@ -184,9 +239,19 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
     static final String MSG_DISABLED = " -- insert card --  ";
     static final String MSG_INVALID = " -- invalid card -- ";
 
-    String displayString = "";
-    JTextField display;
-    JTextField helpDisplay;
+    String firstDisplayString = "";
+    String secondDisplayString = "";
+    String thirdDisplayString = "";
+    JTextField thirdDisplay;
+    JTextField secondDisplay;
+    JTextField firstDisplay;
     JPanel keypad;
+    STATUS status = STATUS.ToBePaid;
+
+    enum STATUS{
+        ToBePaid,
+        InputPIN,
+        HasPaid;
+    }
 
 }

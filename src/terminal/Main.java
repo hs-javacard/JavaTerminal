@@ -43,8 +43,9 @@ public class Main {
 
         PaymentTerminal panel = new PaymentTerminal(frame);
         c.add(panel);
-        frame.setResizable(false);
+        frame.setResizable(true);
         frame.pack();
+        frame.setSize(300,280);
         frame.setVisible(true);
 
 
@@ -62,6 +63,7 @@ public class Main {
     }
 
     public static void switchToPT(){
+        frame.setSize(300,280);
         PaymentTerminal panel = new PaymentTerminal(frame);
         c.removeAll();
         c.repaint();
@@ -72,6 +74,7 @@ public class Main {
     }
 
     public static void switchToRT(){
+        frame.setSize(300,320);
         ReloadTerminal panel = new ReloadTerminal(frame);
         c.removeAll();
         c.repaint();
@@ -82,7 +85,7 @@ public class Main {
     }
 
     public static void switchToIT(){
-        /*
+        frame.setSize(550,450);
         InitializationTerminal panel = new InitializationTerminal(frame);
         c.removeAll();
         c.repaint();
@@ -90,7 +93,6 @@ public class Main {
         c.add(panel);
         c.repaint();
         c.revalidate();
-        */
     }
 }
 
