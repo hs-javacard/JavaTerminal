@@ -40,13 +40,17 @@ public class Main {
     static Container c = frame.getContentPane();
 
     public static void main(String[] args){
-
+/*
         PaymentTerminal panel = new PaymentTerminal(frame);
         c.add(panel);
         frame.setResizable(true);
         frame.pack();
         frame.setSize(300,280);
         frame.setVisible(true);
+        */
+
+        Protocol prot = new Protocol();
+        prot.change_soft_limit();
 
 
         /*

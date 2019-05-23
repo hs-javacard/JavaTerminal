@@ -11,7 +11,11 @@ import static terminal.Main.*;
 
 public class InitializationTerminal extends JPanel implements ActionListener, BaseTerminal{
 
+    private Communication comm;
+
     public InitializationTerminal(JFrame parent){
+        this.comm = new Communication();
+        comm.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
     }

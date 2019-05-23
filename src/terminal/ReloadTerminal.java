@@ -15,7 +15,11 @@ import static terminal.Main.*;
 
 public class ReloadTerminal extends JPanel implements ActionListener, BaseTerminal{
 
+    private Communication comm;
+
     public ReloadTerminal(JFrame parent){
+        this.comm = new Communication();
+        comm.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
     }
