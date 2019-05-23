@@ -19,20 +19,22 @@ public class Protocol  implements ISO7816{
     public void authentication(APDU apdu){
         byte[] buffer = apdu.getBuffer();
         byte ins = buffer[OFFSET_INS];
+        boolean authenticated = false;
 
-        switch (ins) {
-            case 0: // request card number
-                cardNumber = requestCardNumber(apdu);
-                break;
-            case 1: // check soft limit
-                requestPIN(apdu);
-                break;
-            case 2: // check pin
-                checkPin(apdu);
-                break;
-            default:
-                ISOException.throwIt(SW_INCORRECT_P1P2);
-                break;
+        while (!authenticated)
+            switch (ins) {
+                case 0: // request card number
+                    cardNumber = requestCardNumber(apdu);
+                    break;
+                case 1: // stateOfCard
+                    verifyCardStatus(apdu, cardNumber);
+                    break;
+                case 2: // check pin
+                    authenticated = checkPin(apdu);
+                    break;
+                default:
+                    ISOException.throwIt(SW_INCORRECT_P1P2);
+                    break;
         }
     }
 
@@ -56,7 +58,8 @@ public class Protocol  implements ISO7816{
         //TODO
     }
 
-    private void checkPin(APDU apdu) {
+    private boolean checkPin(APDU apdu) {
+        return true;
     }
 
     private void requestPIN(APDU apdu) {
