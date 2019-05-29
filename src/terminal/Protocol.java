@@ -6,7 +6,9 @@ import javacardx.crypto.Cipher;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Protocol  implements ISO7816{
 
@@ -67,56 +69,23 @@ public class Protocol  implements ISO7816{
             RSAPublicKey pb = (RSAPublicKey) keyPair.getPublic();
             RSAPrivateKey pk = (RSAPrivateKey) keyPair.getPrivate();
 
-            int n1 = 50;
-            int n2 = 250;
-            int n3 = 5;
-            System.out.println("nonce[int]: " + n1);
-            System.out.println("public key[int]: " + n2);
-            System.out.println("amount[int]: " + n3);
+            List<Integer> data = new ArrayList<>(Arrays.asList(20, 40, 60));
+            for(int i = 0; i < data.size(); i++){
+                System.out.print("Data[" + i + "]: " + data.get(i) + '\t');
+                if(i == data.size() - 1){
+                    System.out.println(" ");
+                }
+            }
 
-            byte[] nonce = BigInteger.valueOf(n1).toByteArray();
-            byte[] pub = BigInteger.valueOf(n2).toByteArray();
-            byte[] amount = BigInteger.valueOf(n3).toByteArray();
-            System.out.println("nonce[byte]:" + Arrays.toString(nonce));
-            System.out.println("public key[byte]:" + Arrays.toString(pub));
-            System.out.println("amount[byte]:" + Arrays.toString(amount));
+            byte[] test = EncryptMultiData(pb,data);
+            List<Integer> data_2 = DecryptMultiData(pk, test);
 
-            byte[] msg = new byte[100];
-            Util.setShort(msg,(short) 0,(short)nonce.length);
-            Util.setShort(msg,(short) 2,(short)pub.length);
-            Util.setShort(msg,(short) 4,(short)amount.length);
-
-            Util.arrayCopy(nonce,(short)0 ,msg,(short) 6, (short) nonce.length);
-            Util.arrayCopy(pub,(short)0 ,msg,(short) (6 + nonce.length), (short) pub.length);
-            Util.arrayCopy(amount,(short)0 ,msg,(short) (6 + nonce.length + pub.length), (short) amount.length);
-            System.out.println("msg[byte]:" + Arrays.toString(msg));
-            byte[] encryptedMsg = publicKeyEncrypt(pb,msg);
-            System.out.println("enc[byte]:" + Arrays.toString(encryptedMsg));
-            byte[] decryptedMsg = privateKeyDecrypt(pk, encryptedMsg);
-            System.out.println("enc[byte]:" + Arrays.toString(encryptedMsg));
-
-            short nonce_size =(short)(((decryptedMsg[0] & 0xFF) << 8) | (decryptedMsg[1] & 0xFF));
-            short pub_size =(short)(((decryptedMsg[2] & 0xFF) << 8) | (decryptedMsg[3] & 0xFF));
-            short amount_size =(short)(((decryptedMsg[4] & 0xFF) << 8) | (decryptedMsg[5] & 0xFF));
-
-            byte[] nonce_dec = new byte[nonce_size];
-            byte[] pub_dec = new byte[pub_size];
-            byte[] amount_dec = new byte[amount_size];
-
-            Util.arrayCopy(decryptedMsg,(short)6 ,nonce_dec,(short) 0, nonce_size);
-            Util.arrayCopy(decryptedMsg,(short)(6 + nonce_size) ,pub_dec,(short) 0, pub_size);
-            Util.arrayCopy(decryptedMsg,(short)(6 + nonce_size + pub_size) ,amount_dec,(short) 0, amount_size);
-            System.out.println("nonce_dec[byte]:" + Arrays.toString(nonce_dec));
-            System.out.println("public key_dec[byte]:" + Arrays.toString(pub_dec));
-            System.out.println("amount_dec[byte]:" + Arrays.toString(amount_dec));
-
-            int p1 = new BigInteger(nonce_dec).intValue();
-            int p2 = new BigInteger(pub_dec).intValue();
-            int p3 = new BigInteger(amount_dec).intValue();
-
-            System.out.println("nonce_dec[int]: " + p1);
-            System.out.println("public key_dec[int]: " + p2);
-            System.out.println("amount_dec[int]: " + p3);
+            for(int i = 0; i < data_2.size(); i++){
+                System.out.print("Data[" + i + "]: " + data_2.get(i) + '\t');
+                if(i == data_2.size() - 1){
+                    System.out.println(" ");
+                }
+            }
 
         } catch (CryptoException e) {
             short reason = e.getReason();
@@ -196,6 +165,7 @@ public class Protocol  implements ISO7816{
         return false;
     }
 
+    /*Encryption of a byte array*/
     public byte[] publicKeyEncrypt(RSAPublicKey public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
@@ -204,6 +174,7 @@ public class Protocol  implements ISO7816{
         return cipher;
     }
 
+    /*Decryption of a byte array*/
     public byte[] privateKeyDecrypt(RSAPrivateKey private_key, byte[] cipher){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
@@ -212,4 +183,55 @@ public class Protocol  implements ISO7816{
         return plain_text;
     }
 
+    /*Encryption of a list of integers*/
+    public byte[] EncryptMultiData(RSAPublicKey public_key, List<Integer> data){
+        //List<Integer> data = new ArrayList<>();
+        byte[] msg = new byte[100];
+        int msg_offset = 0;
+        for (int i: data){
+            Util.setShort(msg,(short) msg_offset,(short)(BigInteger.valueOf(i).toByteArray().length));
+            msg_offset += 2;
+        }
+
+        for (int i: data){
+            Util.arrayCopy(BigInteger.valueOf(i).toByteArray(),(short)0 ,msg,(short) msg_offset,
+                    (short)(BigInteger.valueOf(i).toByteArray().length));
+            msg_offset += (BigInteger.valueOf(i).toByteArray().length);
+        }
+
+        byte[] encryptedMsg = publicKeyEncrypt(public_key,msg);
+        return encryptedMsg;
+    }
+
+    /*Decryption of a list of integers*/
+    public List<Integer> DecryptMultiData(RSAPrivateKey private_key, byte[] cipher){
+
+        byte[] decryptedMsg = privateKeyDecrypt(private_key, cipher);
+
+        short data1_array_length =(short)(((decryptedMsg[0] & 0xFF) << 8) | (decryptedMsg[1] & 0xFF));
+        short data2_array_length =(short)(((decryptedMsg[2] & 0xFF) << 8) | (decryptedMsg[3] & 0xFF));
+        short data3_array_length =(short)(((decryptedMsg[4] & 0xFF) << 8) | (decryptedMsg[5] & 0xFF));
+
+        byte[] data1_array = new byte[data1_array_length];
+        byte[] data2_array = new byte[data2_array_length];
+        byte[] data3_array = new byte[data3_array_length];
+
+        Util.arrayCopy(decryptedMsg,(short)6 ,data1_array,(short) 0, data1_array_length);
+        Util.arrayCopy(decryptedMsg,(short)(6 + data1_array_length) ,data2_array,(short) 0, data2_array_length);
+        Util.arrayCopy(decryptedMsg,(short)(6 + data1_array_length + data2_array_length) ,data3_array,(short) 0, data3_array_length);
+
+
+        int p1 = new BigInteger(data1_array).intValue();
+        int p2 = new BigInteger(data2_array).intValue();
+        int p3 = new BigInteger(data3_array).intValue();
+
+        return new ArrayList<>(Arrays.asList(p1,p2,p3));
+    }
 }
+
+
+/*TODO: for Anass
+* Withdrawal
+* Deposit
+* Change pin
+* */
