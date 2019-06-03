@@ -23,12 +23,12 @@ import static terminal.Main.*;
 public class PaymentTerminal extends JPanel implements ActionListener, BaseTerminal{
 
     private static short hardLimit;
-    private Communication comm;
+    private Protocol protocol;
 
     public PaymentTerminal(JFrame parent){
         //Only able to pay if hard limit is not reached
-        this.comm = new Communication();
-        comm.init();
+        this.protocol = new Protocol();
+        this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
 

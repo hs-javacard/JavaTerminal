@@ -15,11 +15,11 @@ import static terminal.Main.*;
 
 public class ReloadTerminal extends JPanel implements ActionListener, BaseTerminal{
 
-    private Communication comm;
+    private Protocol protocol;
 
     public ReloadTerminal(JFrame parent){
-        this.comm = new Communication();
-        comm.init();
+        this.protocol = new Protocol();
+        this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
     }
@@ -28,7 +28,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
     public void actionPerformed(ActionEvent ae) {
         try {
             Object src = ae.getSource();
-            if (src instanceof JButton) {
+            if (src instanceof JButton){
                 char c = ((JButton) src).getText().charAt(0);
                 String str = ((JButton) src).getText();
                 switch (str){
@@ -103,6 +103,11 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                             case CHANGE_PIN:
                                 int newPin = Integer.parseInt(secondDisplayString);
                                 System.out.println("User New PIN input: " + Integer.toString(newPin));
+
+                                protocol.change_pin(newPin);
+
+
+
                                 firstDisplayString = "1) Balance";
                                 secondDisplayString = "2) Soft Limit";
                                 thirdDisplayString = "3) Change PIN";
@@ -166,7 +171,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
             }
         } catch (Exception e) {
             System.out.println(MSG_ERROR);
-            //System.out.println(e.getMessage());
+            System.out.println(e.getMessage());
             firstDisplayString = MSG_ERROR;
             secondDisplayString = MSG_ERROR;
             thirdDisplayString = MSG_ERROR;

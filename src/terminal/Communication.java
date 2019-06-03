@@ -11,7 +11,7 @@ import java.util.Arrays;
 import static javacard.framework.ISO7816.*;
 
 public class Communication {
-    public void Communication(){
+    public Communication(){
 
     }
 

@@ -4,8 +4,8 @@ import javacard.framework.*;
 import javacard.security.*;
 import javacardx.crypto.Cipher;
 
+import javax.smartcardio.ResponseAPDU;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,14 +15,26 @@ public class Protocol  implements ISO7816{
     private short cardNumber;
     private short cardState;
     private short pin;
-    Communication comm;
+    private short nonce;
 
-    public void Protocol(){
-        this.comm = new Communication();
+    Communication comm;
+    private RSAPublicKey public_key_terminal;
+    private RSAPrivateKey private_key_terminal;
+    private RSAPublicKey public_key_card;
+
+    public Protocol(){
+        comm = new Communication();
     }
 
     public void init(){
+        comm.init();
 
+        KeyPair keyPair;
+        keyPair = new KeyPair(KeyPair.ALG_RSA, KeyBuilder.LENGTH_RSA_1024);
+        keyPair.genKeyPair();
+
+        public_key_terminal = (RSAPublicKey) keyPair.getPublic();
+        private_key_terminal = (RSAPrivateKey) keyPair.getPrivate();
     }
 
     public void authentication(APDU apdu){
@@ -112,8 +124,22 @@ public class Protocol  implements ISO7816{
 
     }
 
-    public void change_pin(){
+    public void change_pin(int pin){
         //TODO
+        nonce = 5;
+        public_key_card = public_key_terminal;
+        System.out.println("Protocol: " + pin);
+
+        short new_pin = (short) pin;
+        List<Integer> data = new ArrayList<>();
+        data.add((int)nonce);
+        data.add((int) new_pin);
+        byte[] cipher = EncryptMultiData(public_key_terminal, data);
+        byte[] test = BigInteger.valueOf(pin).toByteArray();
+
+        //ResponseAPDU response = comm.sendData((byte) 4, (byte) 0, (byte) 0, (byte) 0,test,(byte) 0);
+        //byte[] card_response = response.getData();
+        //comm.printAPDU(card_response);
     }
 
     private boolean checkPin(APDU apdu) {
@@ -166,16 +192,18 @@ public class Protocol  implements ISO7816{
     }
 
     /*Encryption of a byte array*/
-    public byte[] publicKeyEncrypt(RSAPublicKey public_key, byte[] plain_text){
+    public byte[] EncryptData(RSAPublicKey public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
+
         rsaCipher.init(public_key, Cipher.MODE_ENCRYPT);
         rsaCipher.doFinal(plain_text, (short) 0, (short) plain_text.length, cipher, (short) 0);
+
         return cipher;
     }
 
     /*Decryption of a byte array*/
-    public byte[] privateKeyDecrypt(RSAPrivateKey private_key, byte[] cipher){
+    public byte[] DecryptData(RSAPrivateKey private_key, byte[] cipher){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
         rsaCipher.init(private_key, Cipher.MODE_DECRYPT);
@@ -199,14 +227,14 @@ public class Protocol  implements ISO7816{
             msg_offset += (BigInteger.valueOf(i).toByteArray().length);
         }
 
-        byte[] encryptedMsg = publicKeyEncrypt(public_key,msg);
+        byte[] encryptedMsg = EncryptData(public_key,msg);
         return encryptedMsg;
     }
 
     /*Decryption of a list of integers*/
     public List<Integer> DecryptMultiData(RSAPrivateKey private_key, byte[] cipher){
 
-        byte[] decryptedMsg = privateKeyDecrypt(private_key, cipher);
+        byte[] decryptedMsg = DecryptData(private_key, cipher);
 
         short data1_array_length =(short)(((decryptedMsg[0] & 0xFF) << 8) | (decryptedMsg[1] & 0xFF));
         short data2_array_length =(short)(((decryptedMsg[2] & 0xFF) << 8) | (decryptedMsg[3] & 0xFF));

@@ -40,26 +40,32 @@ public class Main {
     static Container c = frame.getContentPane();
 
     public static void main(String[] args){
-/*
+
+        /*
         PaymentTerminal panel = new PaymentTerminal(frame);
         c.add(panel);
         frame.setResizable(true);
         frame.pack();
         frame.setSize(300,280);
         frame.setVisible(true);
+        switchToRT();
         */
 
+
         Protocol prot = new Protocol();
-        prot.change_soft_limit();
+        prot.init();
+        prot.change_pin(5);
 
 
-        /*
+
+
+/*
         System.out.println("Hello JavaCard");
         Communication t = new Communication();
         t.init();
         ResponseAPDU res = t.sendINS((byte) 0);
-        t.printAPDU(res.getBytes());
-
+        //t.printAPDU(res.getBytes());
+/*
         byte[] data = {0,5,10,15};
         res = t.sendData((byte) 1,(byte) 0,(byte) 0,(byte) 4, data,(byte) 5);
         t.printAPDU(res.getBytes());

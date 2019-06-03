@@ -8,6 +8,7 @@ import java.util.Arrays;
 public class EPApplet extends Applet implements ISO7816 {
 
     private short balance;
+    private byte[] buffer;
 
     public static void install(byte[] buffer, short offset, byte length)
             throws SystemException {
@@ -20,21 +21,27 @@ public class EPApplet extends Applet implements ISO7816 {
     }
 
     public void process(APDU apdu) throws ISOException {
-        byte[] buffer = apdu.getBuffer();
+        buffer = apdu.getBuffer();
+        byte cla = buffer[OFFSET_CLA];
         byte ins = buffer[OFFSET_INS];
         byte p1 = buffer[OFFSET_P1];
+        byte[] data = Arrays.copyOfRange(buffer, OFFSET_CDATA,buffer.length);
 
         if (selectingApplet()) { // we ignore this, it makes ins = -92
             return;
         }
 
         printAPDU(apdu.getBuffer());
-        switch (ins) {
+        int data_length = 0;
+        switch (cla) {
             case 0: // increment balance
                 System.out.println("Instuction 0");
             case 1: // decrement balance
 //                short a = 0;
-                changeBalance(ins, p1);
+                changeBalance(cla, p1);
+                break;
+            case 4: // change pin
+                data_length = changePIN(ins, data);
                 break;
             default:
                 ISOException.throwIt(SW_INS_NOT_SUPPORTED);
@@ -52,11 +59,10 @@ public class EPApplet extends Applet implements ISO7816 {
             ISOException.throwIt((short) (SW_WRONG_LENGTH | 5));
         }
 
-
         Util.setShort(buffer, (short) 1, (short) 0);
         Util.setShort(buffer, (short) 3, (short) 42);
-        apdu.setOutgoingLength((short) 5);
-        apdu.sendBytes((short) 0, (short) 5);
+        apdu.setOutgoingLength((short) (5 + data_length));
+        apdu.sendBytes((short) 0, (short) (5 + data_length));
 
 //        Util.setShort(buffer, (short) 1, (short) 42);
 
@@ -79,6 +85,20 @@ public class EPApplet extends Applet implements ISO7816 {
                 break;
             // dec
         }
+    }
+
+    private int changePIN(short ins, byte[] data){
+        switch (ins) {
+            case 0:
+                System.out.println("change pin instruction 0");
+                Util.arrayCopy(data, (short) 0, buffer,(short) OFFSET_CDATA, (short) data.length);
+                break;
+            case 1:
+                System.out.println("change pin instruction 1");
+                break;
+        }
+        System.out.println(data.length);
+        return data.length;
     }
 
     public void printAPDU(byte[] buffer){
