@@ -54,7 +54,7 @@ public class Main {
 
         Protocol prot = new Protocol();
         prot.init();
-        prot.change_pin(5);
+        prot.change_pin(6);
 
 
 

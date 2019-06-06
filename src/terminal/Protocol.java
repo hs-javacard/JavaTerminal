@@ -10,17 +10,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static terminal.Communication.byteArrayToHex;
+
 public class Protocol  implements ISO7816{
 
     private short cardNumber;
     private short cardState;
     private short pin;
-    private short nonce;
+    private short nonce = 4;
 
     Communication comm;
     private RSAPublicKey public_key_terminal;
     private RSAPrivateKey private_key_terminal;
     private RSAPublicKey public_key_card;
+
+    RandomData random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+    byte[] theKey = {0x2d, 0x2a, 0x2d, 0x42, 0x55, 0x49, 0x4c, 0x44, 0x41, 0x43, 0x4f, 0x44, 0x45, 0x2d, 0x2a, 0x2d};
+    private AESKey sharedKey = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128,
+            false);
+    Cipher aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+
+    private byte[] decryptArray;
+    private byte[] aesWorkspace;
+    byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     public Protocol(){
         comm = new Communication();
@@ -67,14 +79,41 @@ public class Protocol  implements ISO7816{
         //TODO
     }
 
-    public void deposit(){
-        //TODO
+    public void deposit(int deposit){
+        //TODO: cn?
+        System.out.println("Deposit: " + deposit);
+
+        byte[] plain_text = new byte[6];
+        plain_text[0] = (byte) (nonce >> 8);
+        plain_text[1] = (byte) (nonce >> 0);
+
+
+        //ResponseAPDU response = comm.sendData((byte) 4, (byte) 0, (byte) 0, (byte) 0,cipher,(byte) 0);
+
+        int cn = 5;
+        if(Verify_Card_Number(cn)){
+            //Generate symmetric key
+        }else{
+            //Error
+        }
+
+
+        byte[] text = {0x01, 0x03, 0x05, 0x07};
+        printBytes(text);
+        byte[] cipher = encrypt(theKey,text,(short)text.length);
+        printBytes(cipher);
+        byte[] plain = decrypt(cipher);
+        printBytes(plain);
+
+
+
     }
 
     public void change_soft_limit(/*APDU apdu, int nonce, int soft_limit*/){
         //TODO: 1: (nonceRT + publickeyRT + amount)publickeyCard
 
         try {
+            /*
             KeyPair keyPair;
             keyPair = new KeyPair(KeyPair.ALG_RSA, KeyBuilder.LENGTH_RSA_1024);
             keyPair.genKeyPair();
@@ -90,7 +129,7 @@ public class Protocol  implements ISO7816{
             }
 
             byte[] test = EncryptMultiData(pb,data);
-            List<Integer> data_2 = DecryptMultiData(pk, test);
+            List<Integer> data_2 = DecryptMultiData(pk, test, 3);
 
             for(int i = 0; i < data_2.size(); i++){
                 System.out.print("Data[" + i + "]: " + data_2.get(i) + '\t');
@@ -98,7 +137,7 @@ public class Protocol  implements ISO7816{
                     System.out.println(" ");
                 }
             }
-
+*/
         } catch (CryptoException e) {
             short reason = e.getReason();
             ISOException.throwIt(reason);
@@ -125,21 +164,36 @@ public class Protocol  implements ISO7816{
     }
 
     public void change_pin(int pin){
-        //TODO
-        nonce = 5;
+
         public_key_card = public_key_terminal;
-        System.out.println("Protocol: " + pin);
 
-        short new_pin = (short) pin;
-        List<Integer> data = new ArrayList<>();
-        data.add((int)nonce);
-        data.add((int) new_pin);
-        byte[] cipher = EncryptMultiData(public_key_terminal, data);
-        byte[] test = BigInteger.valueOf(pin).toByteArray();
+        System.out.println("New PIN: " + pin);
 
-        //ResponseAPDU response = comm.sendData((byte) 4, (byte) 0, (byte) 0, (byte) 0,test,(byte) 0);
-        //byte[] card_response = response.getData();
-        //comm.printAPDU(card_response);
+        byte[] plain_text = new byte[6];
+        plain_text[0] = (byte) (nonce >> 8);
+        plain_text[1] = (byte) (nonce >> 0);
+        plain_text[2] = (byte) (pin >> 24);
+        plain_text[3] = (byte) (pin >> 16);
+        plain_text[4] = (byte) (pin >> 8);
+        plain_text[5] = (byte) (pin >> 0);
+
+        byte[] cipher = encrypt(theKey,plain_text,(short) plain_text.length);
+        ResponseAPDU response = comm.sendData((byte) 4, (byte) 0, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
+
+        byte[] temp = response.getData();
+        byte[] res = new byte[temp.length-5];
+        Util.arrayCopy(temp, (short) 5, res, (short) 0, (short)res.length);
+        byte[] result = decrypt(res);
+        short non = Util.getShort(result, (short) 0);
+
+        byte[] ack = new byte[result.length - 2];
+        Util.arrayCopy(result, (short) 2, ack, (short) 0, (short) ack.length);
+
+        if(Arrays.equals("PIN changed".getBytes(), ack) || non != nonce){
+            System.out.println("PIN change succesfull");
+        }else{
+            System.out.println("PIN change failed");
+        }
     }
 
     private boolean checkPin(APDU apdu) {
@@ -190,8 +244,8 @@ public class Protocol  implements ISO7816{
         }
         return false;
     }
+    /*
 
-    /*Encryption of a byte array*/
     public byte[] EncryptData(RSAPublicKey public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
@@ -202,7 +256,7 @@ public class Protocol  implements ISO7816{
         return cipher;
     }
 
-    /*Decryption of a byte array*/
+
     public byte[] DecryptData(RSAPrivateKey private_key, byte[] cipher){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
@@ -211,7 +265,7 @@ public class Protocol  implements ISO7816{
         return plain_text;
     }
 
-    /*Encryption of a list of integers*/
+
     public byte[] EncryptMultiData(RSAPublicKey public_key, List<Integer> data){
         //List<Integer> data = new ArrayList<>();
         byte[] msg = new byte[100];
@@ -231,7 +285,26 @@ public class Protocol  implements ISO7816{
         return encryptedMsg;
     }
 
-    /*Decryption of a list of integers*/
+
+    public List<Integer> DecryptMultiData(RSAPrivateKey private_key, byte[] cipher, int number_of_items){
+        byte[] decryptedMsg = DecryptData(private_key, cipher);
+        List<Short> data_length = new ArrayList<>();
+        for (int i = 0; i < number_of_items; i++){
+            data_length.add((short)(((decryptedMsg[(i*2)] & 0xFF) << 8) | (decryptedMsg[(i*2) + 1] & 0xFF)));
+        }
+
+        List<Integer> result = new ArrayList<>();
+        int curr_data_length = 0;
+        for (int i = 0; i < number_of_items; i++){
+            byte[] data = new byte[data_length.get(i)];
+            Util.arrayCopy(decryptedMsg,(short)((number_of_items * 2) + curr_data_length),data,(short) 0, data_length.get(i));
+            curr_data_length += data_length.get(i);
+            result.add(new BigInteger(data).intValue());
+        }
+
+        return result;
+    }
+
     public List<Integer> DecryptMultiData(RSAPrivateKey private_key, byte[] cipher){
 
         byte[] decryptedMsg = DecryptData(private_key, cipher);
@@ -255,6 +328,90 @@ public class Protocol  implements ISO7816{
 
         return new ArrayList<>(Arrays.asList(p1,p2,p3));
     }
+    */
+
+    private byte[] encrypt(byte[] theKey, byte[] buffer, short msgSize) {
+
+        // figure out the size in blocks
+        short blocks = (short) (msgSize / 16);
+        if ((msgSize % 16) > 0)
+            blocks++;
+
+        short encSize = (short) (blocks * 16);
+        short paddingSize = (short) (encSize - msgSize);
+
+
+        byte[] msg = new byte[encSize+18];
+        byte[] cipher = new byte[encSize + 18];
+
+        Util.arrayCopy(buffer, (short) 0, msg, (short) 0, msgSize);
+        Util.arrayFillNonAtomic(msg, msgSize, paddingSize, (byte) 3);
+
+        // generate IV
+        random.generateData(ivdata, (short) 0, (short) 16);
+
+        sharedKey.setKey(theKey, (short) 0);
+
+        aesCipher.init(sharedKey, Cipher.MODE_ENCRYPT, ivdata, (short) 0, (short) 16);
+        aesCipher.doFinal(msg, (short) 0, encSize, cipher, (short) 2);
+
+        Util.arrayCopy(ivdata, (short) 0, cipher, (short) (encSize + 2), (short) 16);
+        Util.setShort(cipher, (short) 0, msgSize);
+
+        return cipher;
+    }
+
+    private byte[] decrypt(byte[] buffer){
+        short len = Util.getShort(buffer, (short) 0);
+        byte[] plain_text = new byte[len];
+        short blocks = (short) (len / 16);
+        if((len % 16) > 0){
+            blocks++;
+        }
+
+        short encSize = (short) (blocks * 16);
+        byte[] msg = new byte[encSize];
+        Util.arrayCopy(buffer, (short) 2, msg, (short) 0, encSize);
+        Util.arrayCopy(buffer, (short) (encSize + 2), ivdata, (short) 0, (short) 16);
+
+        byte[] text = new byte[encSize];
+
+        aesCipher.init(sharedKey, Cipher.MODE_DECRYPT, ivdata, (short) 0, (short) 16);
+        aesCipher.doFinal(msg, (short) 0, encSize, text, (short) 0);
+        Util.arrayCopy(text, (short) 0, plain_text, (short) 0, len);
+        return plain_text;
+    }
+
+    public byte[] IntListToBytes(List<Integer> list){
+
+        int length = 0;
+        for (Integer i:list) {
+            length += BigInteger.valueOf(i).toByteArray().length;
+        }
+
+        byte[] result = new byte[length];
+
+        int offset = 0;
+        for (Integer i:list) {
+            byte[] temp_array = BigInteger.valueOf(i).toByteArray();
+            Util.arrayCopy(temp_array,(short) 0, result, (short) offset,(short) temp_array.length);
+            offset += temp_array.length;
+        }
+        return result;
+    }
+
+    public boolean Verify_Card_Number(int cn){
+        if(cn == 5){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public void printBytes(byte[] buffer){
+        System.out.println(byteArrayToHex(buffer));
+    }
+
 }
 
 

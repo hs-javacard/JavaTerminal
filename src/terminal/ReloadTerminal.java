@@ -82,6 +82,9 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                                 break;
                             case BALANCE:
                                 int balance = Integer.parseInt(secondDisplayString);
+
+                                protocol.deposit(balance);
+
                                 System.out.println("User Balance input: " + Integer.toString(balance));
                                 firstDisplayString = "1) Balance";
                                 secondDisplayString = "2) Soft Limit";
