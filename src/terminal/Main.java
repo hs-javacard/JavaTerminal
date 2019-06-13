@@ -33,28 +33,33 @@ import static javacard.framework.ISO7816.*;
 
 
 
+
+
+
 public class Main {
+
+
+
 
     static final String TITLE = "Base Terminal";
     static JFrame frame = new JFrame(TITLE);
     static Container c = frame.getContentPane();
 
     public static void main(String[] args){
+// deposit, reloadterminal
 
-        /*
-        PaymentTerminal panel = new PaymentTerminal(frame);
+        ReloadTerminal panel = new ReloadTerminal(frame);
         c.add(panel);
         frame.setResizable(true);
         frame.pack();
         frame.setSize(300,280);
         frame.setVisible(true);
         switchToRT();
-        */
 
 
-        Protocol prot = new Protocol();
-        prot.init();
-        prot.change_soft_limit(25);
+//        Protocol prot = new Protocol();
+//        prot.init();
+//        prot.change_soft_limit(25);
 
 
 
@@ -104,5 +109,93 @@ public class Main {
         c.repaint();
         c.revalidate();
     }
+
+    public void setEnabled(boolean b) {
+//        super.setEnabled(b);
+//        if (b) {
+////            setText(0);
+//        } else {
+////            setText(MSG_DISABLED);
+//        }
+//        Component[] keys = keypad.getComponents();
+//        for (int i = 0; i < keys.length; i++) {
+//            keys[i].setEnabled(b);
+//        }
+    }
+
+
 }
 
+class CardThread extends Thread {
+    CardChannel applet;
+
+    static final byte[] CALC_APPLET_AID = { (byte) 0x22, (byte) 0x34,
+            (byte) 0x56, (byte) 0x78, (byte) 0x90, (byte) 0xab };
+    static final CommandAPDU SELECT_APDU = new CommandAPDU(
+            (byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00, CALC_APPLET_AID);
+
+    public void run() {
+        try {
+            TerminalFactory tf = TerminalFactory.getDefault();
+            CardTerminals ct = tf.terminals();
+            List<CardTerminal> cs = ct.list(CardTerminals.State.CARD_PRESENT);
+            if (cs.isEmpty()) {
+                System.err.println("No terminals with a card found.");
+                return;
+            }
+
+            while (true) {
+                try {
+                    for(CardTerminal c : cs) {
+                        if (c.isCardPresent()) {
+                            try {
+                                Card card = c.connect("*");
+                                try {
+
+                                    applet = card.getBasicChannel();
+                                    ResponseAPDU resp = applet.transmit(SELECT_APDU);
+                                    if (resp.getSW() != 0x9000) {
+                                        throw new Exception("Select failed");
+                                    }
+//                                        setText(sendKey((byte) '='));
+//                                    setEnabled(true);
+
+                                    // Wait for the card to be removed
+                                    while (c.isCardPresent());
+//                                    setEnabled(false);
+//                                        setText(MSG_DISABLED);
+                                    break;
+                                } catch (Exception e) {
+                                    System.err.println("Card does not contain CalcApplet?!");
+//                                        setText(MSG_INVALID);
+                                    sleep(2000);
+//                                        setText(MSG_DISABLED);
+                                    continue;
+                                }
+                            } catch (CardException e) {
+                                System.err.println("Couldn't connect to card!");
+//                                    setText(MSG_INVALID);
+                                sleep(2000);
+//                                    setText(MSG_DISABLED);
+                                continue;
+                            }
+                        } else {
+                            System.err.println("No card present!");
+//                                setText(MSG_INVALID);
+                            sleep(2000);
+//                                setText(MSG_DISABLED);
+                            continue;
+                        }
+                    }
+                } catch (CardException e) {
+                    System.err.println("Card status problem!");
+                }
+            }
+        } catch (Exception e) {
+//            setEnabled(false);
+//                setText(MSG_ERROR);
+            System.out.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}

@@ -22,6 +22,8 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
+
+        (new CardThread()).start();
     }
 
     @Override

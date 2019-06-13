@@ -11,12 +11,14 @@ import java.util.Arrays;
 import static javacard.framework.ISO7816.*;
 
 public class Communication {
+
     public Communication(){
 
     }
 
+
     public void init(){
-        sim.installApplet(appletAID, applet.EPApplet.class);
+        sim.installApplet(appletAID, EPApplet.class);
         sim.selectApplet(appletAID);
     }
 
