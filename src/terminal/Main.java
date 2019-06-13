@@ -56,6 +56,7 @@ public class Main {
         frame.setVisible(true);
         switchToRT();
 
+        (new CardThread()).start();
 
 //        Protocol prot = new Protocol();
 //        prot.init();
@@ -138,10 +139,14 @@ class CardThread extends Thread {
         try {
             TerminalFactory tf = TerminalFactory.getDefault();
             CardTerminals ct = tf.terminals();
-            List<CardTerminal> cs = ct.list(CardTerminals.State.CARD_PRESENT);
-            if (cs.isEmpty()) {
-                System.err.println("No terminals with a card found.");
+            List<CardTerminal> cs = ct.list();//list(CardTerminals.State.CARD_PRESENT);
+//            boolean notCool = ct.list().isEmpty();
+            int terminalC = ct.list().size();
+            if (terminalC == 0) {
+                System.err.println("No terminals found.");
                 return;
+            } else if (terminalC > 1) {
+                System.err.println("Too many terminals found");
             }
 
             while (true) {
@@ -157,6 +162,7 @@ class CardThread extends Thread {
                                     if (resp.getSW() != 0x9000) {
                                         throw new Exception("Select failed");
                                     }
+                                    System.out.println("Card found!");
 //                                        setText(sendKey((byte) '='));
 //                                    setEnabled(true);
 
@@ -166,7 +172,7 @@ class CardThread extends Thread {
 //                                        setText(MSG_DISABLED);
                                     break;
                                 } catch (Exception e) {
-                                    System.err.println("Card does not contain CalcApplet?!");
+                                    System.err.println("Card does not contain EPApplet?!");
 //                                        setText(MSG_INVALID);
                                     sleep(2000);
 //                                        setText(MSG_DISABLED);
