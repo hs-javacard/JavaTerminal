@@ -100,7 +100,25 @@ public class EPApplet extends Applet implements ISO7816 {
             // dec
         }
     }
+/*
+    private void retrievePkTAndSendCardNumber(APDU apdu) {
+        byte[] buffer = apdu.getBuffer();
+//        nonce = Util.getShort(buffer, OFFSET_CDATA);
+        KeyHelper.init(pkTerminal, buffer, (short) (OFFSET_CDATA + 0));
 
+        insCounter++;
+
+        Util.arrayCopy("Henk2".getBytes(), (short) 0, buffer, (short) 0, (short) 5);
+//        buffer[0] = claCounter;
+//        Util.setShort(buffer, (short) 1, nonce);
+//        Util.setShort(buffer, (short) 3, cardNumber);
+
+        short whatisthis = encryptRsa(apdu, (short) 5, pkTerminal);
+
+
+        sendResponse(apdu, (short) 128);
+    }
+*/
     private int changePIN(short ins, byte[] data){
         int result = 0;
         sharedKey.setKey(theKey, (short) 0);
@@ -140,7 +158,28 @@ public class EPApplet extends Applet implements ISO7816 {
         result = result.substring(0, result.length() - 1) + "]";
         return result;
     }
+/*
+    public void decryptRsa(APDU apdu) {
+        byte[] buffer = apdu.getBuffer();
 
+        RSAPrivateKey pk = (RSAPrivateKey) keyPair.getPrivate();
+        rsaCipher.init(pk, Cipher.MODE_DECRYPT);
+        rsaCipher.doFinal(buffer, (short) OFFSET_CDATA, (short) 128, buffer1, (short) 0);
+    }
+
+    public short encryptRsa(APDU apdu, short msgSize, Key key) {
+        byte[] buffer = apdu.getBuffer();
+        Util.arrayCopy(buffer, (short) 0, rsaWorkspace, (short) 0, msgSize);
+
+        rsaCipher.init(key, Cipher.MODE_ENCRYPT);
+        return rsaCipher.doFinal(rsaWorkspace, (short) 0, (short) msgSize, buffer, (short) 0);
+    }
+
+    public void encryptRsa(Key key, byte[] from, byte[] to) {
+        rsaCipher.init(key, Cipher.MODE_ENCRYPT);
+        rsaCipher.doFinal(from, (short) 0, (short) from.length, to, (short) 0);
+    }
+*/
     private byte[] encrypt(byte[] theKey, byte[] buffer, short msgSize) {
 
         // figure out the size in blocks

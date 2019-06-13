@@ -16,7 +16,7 @@ public class Communication {
     }
 
     public void init(){
-        sim.installApplet(appletAID, EPApplet.class);
+        sim.installApplet(appletAID, applet.EPApplet.class);
         sim.selectApplet(appletAID);
     }
 

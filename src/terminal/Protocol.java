@@ -4,9 +4,9 @@ import javacard.framework.*;
 import javacard.security.*;
 import javacardx.crypto.Cipher;
 
+import javax.smartcardio.CardException;
 import javax.smartcardio.ResponseAPDU;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -75,21 +75,187 @@ public class Protocol  implements ISO7816{
         apdu.setOutgoingAndSend((short) 0, length);
     }
 
-    public void withdrawal(){
+    public void withdrawal(int payment){
+
+        System.out.println("[TERMINAL]: Payment = " + payment);
+        System.out.println("[TERMINAL]: nonce send = " + nonce);
+
         //TODO
+        byte[] temp = new byte[255];
+        short exponent_size = public_key_terminal.getExponent(temp, (short) 0);
+        short modulus_size = public_key_terminal.getModulus(temp, exponent_size);
+        byte[] plain_text = new byte[exponent_size + modulus_size + 6];
+        Util.setShort(plain_text,(short) 0, nonce);
+        Util.setShort(plain_text,(short) 2, exponent_size);
+        Util.setShort(plain_text,(short) 4, modulus_size);
+        Util.arrayCopy(temp, (short) 0, plain_text, (short) 6, exponent_size);
+        Util.arrayCopy(temp, exponent_size, plain_text, (short) (6 + exponent_size), modulus_size);
+
+        /*
+        System.out.print("[TERMINAL]: ");
+        printBytes(plain_text);
+        */
+        ResponseAPDU response = comm.sendData((byte) 2, (byte) 0, (byte) 0, (byte) 0,plain_text,(byte) 0);
+
+        short response_length = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA));
+        byte[] res = Arrays.copyOfRange(response.getBytes(), (OFFSET_CDATA + 2),
+                (OFFSET_CDATA + 2 + response_length));
+        /*
+        System.out.print("[TERMINAL]: ");
+        printBytes(res);
+        */
+
+        byte[] plain = RSA_decrypt(private_key_terminal, res);
+        System.out.print("[TERMINAL]: ");
+        printBytes(plain);
+
+        short card_nonce = Util.getShort(plain, (short) 0);
+        short card_number = Util.getShort(plain, (short) 2);
+
+        //TODO: Verify card number
+
+        if(card_nonce == nonce) {
+            if (card_number == 5) {
+                System.out.println("-------------------- PHASE 2 --------------------");
+
+                System.out.print("[TERMINAL]: ");
+                printBytes(theKey);
+
+                byte[] msg = new byte[theKey.length + 2];
+                Util.setShort(msg, (short)0, nonce);
+                Util.arrayCopy(theKey,(short) 0, msg, (short) 2, (short) theKey.length);
+
+                public_key_card = public_key_terminal;
+
+                byte[] cipher2 = RSA_encrypt(public_key_card,msg);
+                msg = new byte[cipher2.length + 2];
+                Util.setShort(msg, (short) 0, (short) cipher2.length);
+                Util.arrayCopy(cipher2, (short) 0, msg, (short) 2, (short) cipher2.length);
+                ResponseAPDU response2 = comm.sendData((byte) 2, (byte) 1, (byte) 0, (byte) 0,msg,(byte) 0);
+
+                //TODO: Verify state of card
+
+                System.out.println("-------------------- PHASE 3 --------------------");
+
+                short day_nr = 69;
+
+                msg = new byte[6];
+                Util.setShort(msg, (short) 0, nonce);
+                Util.setShort(msg, (short) 2, (short) payment);
+                Util.setShort(msg, (short) 4, day_nr);
+
+                byte[] cipher3 = encrypt(theKey, msg, (short) msg.length);
+                ResponseAPDU response3 = comm.sendData((byte) 2, (byte) 2, (byte) 0, (byte) 0,msg,(byte) 0);
+                short received_nonce = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA));
+                short status_code = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA + 2));
+                System.out.println("[TERMINAL] status_code = " + status_code);
+                switch (status_code){
+                    case 1:
+                        /*
+                        short new_balance = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA + 4));
+                        System.out.println("[TERMINAL] New card balance = " + new_balance);
+                        */
+                        //TODO: save signed message to logs
+                        break;
+                    case -1:
+                        System.out.println("[TERMINAL] ERROR: Not enough balance on the card for the transaction");
+                        break;
+                    case -2:
+                        System.out.println("[TERMINAL] ERROR: The payment exceeds the soft limit");
+                        break;
+                    case -3:
+                        System.out.println("[TERMINAL] ERROR: The daily limit has been exceeded");
+                        break;
+                    default:
+                        System.out.println("[TERMINAL] ERROR: unknown status code");
+                        break;
+                }
+            }
+        }
     }
 
     public void deposit(int deposit){
-        //TODO: cn?
-        System.out.println("Deposit: " + deposit);
 
-        byte[] plain_text = new byte[6];
-        plain_text[0] = (byte) (nonce >> 8);
-        plain_text[1] = (byte) (nonce >> 0);
+        System.out.println("[TERMINAL]: Deposit = " + deposit);
+        System.out.println("[TERMINAL]: nonce send = " + nonce);
+
+
+        byte[] temp = new byte[255];
+        short exponent_size = public_key_terminal.getExponent(temp, (short) 0);
+        short modulus_size = public_key_terminal.getModulus(temp, exponent_size);
+        byte[] plain_text = new byte[exponent_size + modulus_size + 6];
+        Util.setShort(plain_text,(short) 0, nonce);
+        Util.setShort(plain_text,(short) 2, exponent_size);
+        Util.setShort(plain_text,(short) 4, modulus_size);
+        Util.arrayCopy(temp, (short) 0, plain_text, (short) 6, exponent_size);
+        Util.arrayCopy(temp, exponent_size, plain_text, (short) (6 + exponent_size), modulus_size);
+
+        /*
+        System.out.print("[TERMINAL]: ");
+        printBytes(plain_text);
+        */
+        ResponseAPDU response = comm.sendData((byte) 3, (byte) 0, (byte) 0, (byte) 0,plain_text,(byte) 0);
+
+
+        short response_length = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA));
+        byte[] res = Arrays.copyOfRange(response.getBytes(), (OFFSET_CDATA + 2),
+                (OFFSET_CDATA + 2 + response_length));
+        /*
+        System.out.print("[TERMINAL]: ");
+        printBytes(res);
+        */
+
+        byte[] plain = RSA_decrypt(private_key_terminal, res);
+        System.out.print("[TERMINAL]: ");
+        printBytes(plain);
+
+        short card_nonce = Util.getShort(plain, (short) 0);
+        short card_number = Util.getShort(plain, (short) 2);
+
+        //TODO: Verify card number
+
+        if(card_nonce == nonce){
+            if(card_number == 5){
+                System.out.println("-------------------- PHASE 2 --------------------");
+
+                System.out.print("[TERMINAL]: ");
+                printBytes(theKey);
+
+                byte[] msg = new byte[theKey.length + 2];
+                Util.setShort(msg, (short)0, nonce);
+                Util.arrayCopy(theKey,(short) 0, msg, (short) 2, (short) theKey.length);
+
+                public_key_card = public_key_terminal;
+
+                byte[] cipher2 = RSA_encrypt(public_key_card,msg);
+                msg = new byte[cipher2.length + 2];
+                Util.setShort(msg, (short) 0, (short) cipher2.length);
+                Util.arrayCopy(cipher2, (short) 0, msg, (short) 2, (short) cipher2.length);
+                ResponseAPDU response2 = comm.sendData((byte) 3, (byte) 1, (byte) 0, (byte) 0,msg,(byte) 0);
+
+                //TODO: Verify state of card
+
+                System.out.println("-------------------- PHASE 3 --------------------");
+                msg = new byte[4];
+                Util.setShort(msg, (short) 0, nonce);
+                Util.setShort(msg, (short) 2, (short) deposit);
+                byte[] cipher3 = encrypt(theKey, msg, (short) msg.length);
+                ResponseAPDU response3 = comm.sendData((byte) 3, (byte) 2, (byte) 0, (byte) 0,msg,(byte) 0);
+                /*
+                short balance_new = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA));
+                System.out.print("[TERMINAL] new card balance = " + balance_new);
+                */
+                //TODO: Save signed message to logs
+            }
+        }
+
+
+
+
 
 
         //ResponseAPDU response = comm.sendData((byte) 4, (byte) 0, (byte) 0, (byte) 0,cipher,(byte) 0);
-
+/*
         int cn = 5;
         if(Verify_Card_Number(cn)){
             //Generate symmetric key
@@ -104,70 +270,25 @@ public class Protocol  implements ISO7816{
         printBytes(cipher);
         byte[] plain = decrypt(cipher);
         printBytes(plain);
-
+*/
 
 
     }
 
-    public void change_soft_limit(/*APDU apdu, int nonce, int soft_limit*/){
-        //TODO: 1: (nonceRT + publickeyRT + amount)publickeyCard
-
-        try {
-            /*
-            KeyPair keyPair;
-            keyPair = new KeyPair(KeyPair.ALG_RSA, KeyBuilder.LENGTH_RSA_1024);
-            keyPair.genKeyPair();
-            RSAPublicKey pb = (RSAPublicKey) keyPair.getPublic();
-            RSAPrivateKey pk = (RSAPrivateKey) keyPair.getPrivate();
-
-            List<Integer> data = new ArrayList<>(Arrays.asList(20, 40, 60));
-            for(int i = 0; i < data.size(); i++){
-                System.out.print("Data[" + i + "]: " + data.get(i) + '\t');
-                if(i == data.size() - 1){
-                    System.out.println(" ");
-                }
-            }
-
-            byte[] test = EncryptMultiData(pb,data);
-            List<Integer> data_2 = DecryptMultiData(pk, test, 3);
-
-            for(int i = 0; i < data_2.size(); i++){
-                System.out.print("Data[" + i + "]: " + data_2.get(i) + '\t');
-                if(i == data_2.size() - 1){
-                    System.out.println(" ");
-                }
-            }
-*/
-        } catch (CryptoException e) {
-            short reason = e.getReason();
-            ISOException.throwIt(reason);
-        }
-
-
-
-
-
-        int ins = 0;
-        int pk_card = 5;
-
-        //RSAPublicKey cardPub = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, true);
-        switch (ins){
-            case 0:
-
-                break;
-            default:
-                ISOException.throwIt(SW_INCORRECT_P1P2);
-                break;
-        }
+    public void change_soft_limit(int soft_limit){
+        System.out.println("[TERMINAL] New Soft Limit = " + soft_limit);
+        byte[] plain_text = new byte[4];
+        Util.setShort(plain_text, (short) 0, nonce);
+        Util.setShort(plain_text, (short) 2, (short) soft_limit);
+        byte[] cipher = encrypt(theKey, plain_text, (short) plain_text.length);
+        ResponseAPDU response = comm.sendData((byte) 1, (byte) 3, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
+        //TODO: Save signed message to logs
 
 
     }
 
     public void change_pin(int pin){
-
-        public_key_card = public_key_terminal;
-
-        System.out.println("New PIN: " + pin);
+        System.out.println("[TERMINAL]: New PIN = " + pin);
 
         byte[] plain_text = new byte[6];
         plain_text[0] = (byte) (nonce >> 8);
@@ -178,9 +299,9 @@ public class Protocol  implements ISO7816{
         plain_text[5] = (byte) (pin >> 0);
 
         byte[] cipher = encrypt(theKey,plain_text,(short) plain_text.length);
-        ResponseAPDU response = comm.sendData((byte) 4, (byte) 0, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
-
+        ResponseAPDU response = comm.sendData((byte) 0, (byte) 2, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
         byte[] temp = response.getData();
+        /*
         byte[] res = new byte[temp.length-5];
         Util.arrayCopy(temp, (short) 5, res, (short) 0, (short)res.length);
         byte[] result = decrypt(res);
@@ -194,6 +315,7 @@ public class Protocol  implements ISO7816{
         }else{
             System.out.println("PIN change failed");
         }
+*/
     }
 
     private boolean checkPin(APDU apdu) {
@@ -244,28 +366,34 @@ public class Protocol  implements ISO7816{
         }
         return false;
     }
-    /*
 
-    public byte[] EncryptData(RSAPublicKey public_key, byte[] plain_text){
+    public byte[] RSA_encrypt(RSAPublicKey public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
+        short length = (short) plain_text.length;
+        byte[] temp_array = new byte[plain_text.length + 2];
+        Util.setShort(temp_array,(short) 0, length);
+        Util.arrayCopy(plain_text,(short) 0, temp_array, (short) 2, (short)plain_text.length);
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
 
         rsaCipher.init(public_key, Cipher.MODE_ENCRYPT);
-        rsaCipher.doFinal(plain_text, (short) 0, (short) plain_text.length, cipher, (short) 0);
+        rsaCipher.doFinal(temp_array, (short) 0, (short) temp_array.length, cipher, (short) 0);
 
         return cipher;
     }
 
 
-    public byte[] DecryptData(RSAPrivateKey private_key, byte[] cipher){
+    public byte[] RSA_decrypt(RSAPrivateKey private_key, byte[] cipher){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
         rsaCipher.init(private_key, Cipher.MODE_DECRYPT);
         rsaCipher.doFinal(cipher, (short) 0, (short) cipher.length, plain_text, (short) 0);
-        return plain_text;
+        short length = Util.getShort(plain_text, (short) 0);
+        byte[] result = new byte[length];
+        Util.arrayCopy(plain_text, (short) 2, result, (short) 0 , length);
+        return result;
     }
 
-
+/*
     public byte[] EncryptMultiData(RSAPublicKey public_key, List<Integer> data){
         //List<Integer> data = new ArrayList<>();
         byte[] msg = new byte[100];
@@ -281,13 +409,13 @@ public class Protocol  implements ISO7816{
             msg_offset += (BigInteger.valueOf(i).toByteArray().length);
         }
 
-        byte[] encryptedMsg = EncryptData(public_key,msg);
+        byte[] encryptedMsg = RSA_encrypt(public_key,msg);
         return encryptedMsg;
     }
 
 
     public List<Integer> DecryptMultiData(RSAPrivateKey private_key, byte[] cipher, int number_of_items){
-        byte[] decryptedMsg = DecryptData(private_key, cipher);
+        byte[] decryptedMsg = RSA_decrypt(private_key, cipher);
         List<Short> data_length = new ArrayList<>();
         for (int i = 0; i < number_of_items; i++){
             data_length.add((short)(((decryptedMsg[(i*2)] & 0xFF) << 8) | (decryptedMsg[(i*2) + 1] & 0xFF)));
@@ -307,7 +435,7 @@ public class Protocol  implements ISO7816{
 
     public List<Integer> DecryptMultiData(RSAPrivateKey private_key, byte[] cipher){
 
-        byte[] decryptedMsg = DecryptData(private_key, cipher);
+        byte[] decryptedMsg = RSA_decrypt(private_key, cipher);
 
         short data1_array_length =(short)(((decryptedMsg[0] & 0xFF) << 8) | (decryptedMsg[1] & 0xFF));
         short data2_array_length =(short)(((decryptedMsg[2] & 0xFF) << 8) | (decryptedMsg[3] & 0xFF));

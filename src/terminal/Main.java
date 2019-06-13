@@ -54,7 +54,7 @@ public class Main {
 
         Protocol prot = new Protocol();
         prot.init();
-        prot.change_pin(6);
+        prot.change_soft_limit(25);
 
 
 
