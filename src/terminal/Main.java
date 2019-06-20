@@ -52,8 +52,10 @@ public class Main {
         ct = new CardThread();
         ct.start();
 
-
         ReloadTerminal panel = new ReloadTerminal(frame, ct);
+
+        //PaymentTerminal panel = new PaymentTerminal(frame);
+
         c.add(panel);
         frame.setResizable(true);
         frame.pack();
@@ -65,6 +67,15 @@ public class Main {
 //        Protocol prot = new Protocol();
 //        prot.init();
 //        prot.change_soft_limit(25);
+
+
+
+
+//        Protocol prot = new Protocol();
+//        prot.init();
+        //prot.test();
+        //prot.change_pin(1);
+
 
 
 

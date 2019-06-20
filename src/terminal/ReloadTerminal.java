@@ -25,6 +25,56 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
 
     }
 
+    public void menuToPIN(){
+        firstDisplayString = "Input PIN: ";
+        secondDisplayString = "";
+        thirdDisplayString = "";
+        fourthDisplayString = "";
+        prev_status = status;
+        status = STATUS.PIN;
+        updateText();
+    }
+
+    public void menuToSTART(){
+        firstDisplayString = "1) Balance";
+        secondDisplayString = "2) Soft Limit";
+        thirdDisplayString = "3) Change PIN";
+        fourthDisplayString = "";
+        prev_status = status;
+        status = STATUS.MENU;
+        updateText();
+    }
+
+    public void menuToBALANCE(){
+        firstDisplayString = "Input Balance: ";
+        secondDisplayString = "";
+        thirdDisplayString = "";
+        fourthDisplayString = "";
+        prev_status = status;
+        status = STATUS.BALANCE;
+        updateText();
+    }
+
+    public void menuToSOFT_LIMIT(){
+        firstDisplayString = "Input Soft Limit: ";
+        secondDisplayString = "";
+        thirdDisplayString = "";
+        fourthDisplayString = "";
+        prev_status = status;
+        status = STATUS.SOFT_LIMIT;
+        updateText();
+    }
+
+    public void menuToCHANGE_PIN(){
+        firstDisplayString = "Input PIN: ";
+        secondDisplayString = "";
+        thirdDisplayString = "";
+        fourthDisplayString = "";
+        prev_status = status;
+        status = STATUS.CHANGE_PIN;
+        updateText();
+    }
+
     @Override
     public void actionPerformed(ActionEvent ae) {
         try {
@@ -34,93 +84,62 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                 String str = ((JButton) src).getText();
                 switch (str){
                     case "*":
-                        protocol.testt();
+//                        protocol.testt();
                         break;
                     case "STOP":
-                        firstDisplayString = "Input PIN: ";
-                        secondDisplayString = "";
-                        thirdDisplayString = "";
-                        fourthDisplayString = "";
-                        status = STATUS.PIN;
-                        updateText();
+                        menuToSTART();
                         break;
                     case "OK":
                         switch (status){
                             case PIN:
                                 int pin = Integer.parseInt(secondDisplayString);
                                 System.out.println("User PIN input: " + Integer.toString(pin));
-                                firstDisplayString = "1) Balance";
-                                secondDisplayString = "2) Soft Limit";
-                                thirdDisplayString = "3) Change PIN";
-                                fourthDisplayString = "";
-                                status = STATUS.MENU;
-                                updateText();
-                                break;
-                            case MENU:
-                                switch (fourthDisplayString){
-                                    case "1":
-                                        firstDisplayString = "Input Balance: ";
-                                        secondDisplayString = "";
-                                        thirdDisplayString = "";
-                                        fourthDisplayString = "";
-                                        status = STATUS.BALANCE;
+                                switch (prev_status){
+                                    case CHANGE_PIN:
+                                        menuToSTART();
                                         break;
-                                    case "2":
-                                        firstDisplayString = "Input Soft Limit: ";
-                                        secondDisplayString = "";
-                                        thirdDisplayString = "";
-                                        fourthDisplayString = "";
-                                        status = STATUS.SOFT_LIMIT;
+                                    case SOFT_LIMIT:
+                                        menuToSTART();
                                         break;
-                                    case "3":
-                                        firstDisplayString = "Input PIN: ";
-                                        secondDisplayString = "";
-                                        thirdDisplayString = "";
-                                        fourthDisplayString = "";
-                                        status = STATUS.CHANGE_PIN;
+                                    case BALANCE:
+                                        menuToSTART();
                                         break;
                                     default:
                                         break;
                                 }
-                                updateText();
+                                break;
+                            case MENU:
+                                switch (fourthDisplayString){
+                                    case "1":
+                                        menuToBALANCE();
+                                        break;
+                                    case "2":
+                                        menuToSOFT_LIMIT();
+                                        break;
+                                    case "3":
+                                        menuToCHANGE_PIN();
+                                        break;
+                                    default:
+                                        break;
+                                }
                                 break;
                             case BALANCE:
-                                int balance = Integer.parseInt(secondDisplayString);
-
-                                protocol.deposit(balance);
-
+                                balance = Integer.parseInt(secondDisplayString);
                                 System.out.println("User Balance input: " + Integer.toString(balance));
-                                firstDisplayString = "1) Balance";
-                                secondDisplayString = "2) Soft Limit";
-                                thirdDisplayString = "3) Change PIN";
-                                fourthDisplayString = "";
-                                status = STATUS.MENU;
-                                updateText();
+
+                                menuToPIN();
                                 break;
                             case SOFT_LIMIT:
-                                int limit = Integer.parseInt(secondDisplayString);
+                                limit = Integer.parseInt(secondDisplayString);
                                 System.out.println("User Soft Limit input: " + Integer.toString(limit));
-                                firstDisplayString = "1) Balance";
-                                secondDisplayString = "2) Soft Limit";
-                                thirdDisplayString = "3) Change PIN";
-                                fourthDisplayString = "";
-                                status = STATUS.MENU;
-                                updateText();
+
+                                menuToPIN();
                                 break;
                             case CHANGE_PIN:
-                                int newPin = Integer.parseInt(secondDisplayString);
+                                newPin = Integer.parseInt(secondDisplayString);
                                 System.out.println("User New PIN input: " + Integer.toString(newPin));
 
-                                protocol.change_pin(newPin);
-
-
-
-                                firstDisplayString = "1) Balance";
-                                secondDisplayString = "2) Soft Limit";
-                                thirdDisplayString = "3) Change PIN";
-                                fourthDisplayString = "";
-                                status = STATUS.MENU;
-                                updateText();
+                                menuToPIN();
                                 break;
                         }
 
@@ -226,8 +245,6 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         add(firstDisplay,gbc);
-        firstDisplayString = "Input PIN:";
-        firstDisplay.setText(firstDisplayString);
 
         secondDisplay = new JTextField(DISPLAY_WIDTH);
         secondDisplay.setHorizontalAlignment(JTextField.LEFT);
@@ -238,9 +255,6 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         secondDisplay.setMinimumSize(d);
         gbc.gridy++;
         add(secondDisplay,gbc);
-        secondDisplayString = "";
-        secondDisplay.setText(secondDisplayString);
-
 
         thirdDisplay = new JTextField(DISPLAY_WIDTH);
         thirdDisplay.setHorizontalAlignment(JTextField.LEFT);
@@ -251,9 +265,6 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         thirdDisplay.setMinimumSize(d);
         gbc.gridy++;
         add(thirdDisplay, gbc);
-        thirdDisplayString = "";
-        thirdDisplay.setText(thirdDisplayString);
-
 
         fourthDisplay = new JTextField(DISPLAY_WIDTH);
         fourthDisplay.setHorizontalAlignment(JTextField.RIGHT);
@@ -264,8 +275,8 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         fourthDisplay.setMinimumSize(d);
         gbc.gridy++;
         add(fourthDisplay, gbc);
-        fourthDisplayString = "";
-        fourthDisplay.setText(fourthDisplayString);
+
+        menuToSTART();
 
         keypad = new JPanel(new GridLayout(5, 4));
         key("1");
@@ -354,7 +365,12 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
     JTextField thirdDisplay;
     JTextField fourthDisplay;
     JPanel keypad;
-    STATUS status = STATUS.PIN;
+    STATUS status = STATUS.MENU;
+    STATUS prev_status = STATUS.MENU;
+
+    int balance;
+    int newPin;
+    int limit;
 
     enum STATUS{
         PIN,
