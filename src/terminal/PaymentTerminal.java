@@ -25,9 +25,9 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
     private static short hardLimit;
     private Protocol protocol;
 
-    public PaymentTerminal(JFrame parent){
+    public PaymentTerminal(JFrame parent, CardThread ct){
         //Only able to pay if hard limit is not reached
-        this.protocol = new Protocol();
+        this.protocol = new Protocol(ct);
         this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);

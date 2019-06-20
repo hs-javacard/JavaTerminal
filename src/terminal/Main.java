@@ -44,11 +44,16 @@ public class Main {
     static final String TITLE = "Base Terminal";
     static JFrame frame = new JFrame(TITLE);
     static Container c = frame.getContentPane();
+    static CardThread ct;
 
     public static void main(String[] args){
 // deposit, reloadterminal
 
-        ReloadTerminal panel = new ReloadTerminal(frame);
+        ct = new CardThread();
+        ct.start();
+
+
+        ReloadTerminal panel = new ReloadTerminal(frame, ct);
         c.add(panel);
         frame.setResizable(true);
         frame.pack();
@@ -56,7 +61,6 @@ public class Main {
         frame.setVisible(true);
         switchToRT();
 
-        (new CardThread()).start();
 
 //        Protocol prot = new Protocol();
 //        prot.init();
@@ -80,7 +84,7 @@ public class Main {
 
     public static void switchToPT(){
         frame.setSize(300,280);
-        PaymentTerminal panel = new PaymentTerminal(frame);
+        PaymentTerminal panel = new PaymentTerminal(frame, ct);
         c.removeAll();
         c.repaint();
         c.revalidate();
@@ -91,7 +95,7 @@ public class Main {
 
     public static void switchToRT(){
         frame.setSize(300,320);
-        ReloadTerminal panel = new ReloadTerminal(frame);
+        ReloadTerminal panel = new ReloadTerminal(frame, ct);
         c.removeAll();
         c.repaint();
         c.revalidate();
@@ -102,7 +106,7 @@ public class Main {
 
     public static void switchToIT(){
         frame.setSize(550,450);
-        InitializationTerminal panel = new InitializationTerminal(frame);
+        InitializationTerminal panel = new InitializationTerminal(frame, ct);
         c.removeAll();
         c.repaint();
         c.revalidate();

@@ -17,8 +17,8 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
 
     private Protocol protocol;
 
-    public ReloadTerminal(JFrame parent){
-        this.protocol = new Protocol();
+    public ReloadTerminal(JFrame parent, CardThread ct){
+        this.protocol = new Protocol(ct);
         this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
@@ -33,6 +33,9 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                 char c = ((JButton) src).getText().charAt(0);
                 String str = ((JButton) src).getText();
                 switch (str){
+                    case "*":
+                        protocol.testt();
+                        break;
                     case "STOP":
                         firstDisplayString = "Input PIN: ";
                         secondDisplayString = "";

@@ -34,8 +34,8 @@ public class Protocol  implements ISO7816{
     private byte[] aesWorkspace;
     byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    public Protocol(){
-        comm = new Communication();
+    public Protocol(CardThread ct){
+        comm = new Communication(ct);
     }
 
     public void init(){
@@ -48,6 +48,23 @@ public class Protocol  implements ISO7816{
         public_key_terminal = (RSAPublicKey) keyPair.getPublic();
         private_key_terminal = (RSAPrivateKey) keyPair.getPrivate();
     }
+
+//    public void testt(){
+//        byte[] buf = new byte[10];
+//        Util.setShort(buf, (short) 0, (short) 1);// cardnr
+//        Util.setShort(buf, (short) 2, (short) 2000);// balance
+//        Util.setShort(buf, (short) 4, (short) 5);// pin
+//        Util.setShort(buf, (short) 6, (short) 1000);// soft l
+//        Util.setShort(buf, (short) 8, (short) 1500);// hard l
+//
+//        ResponseAPDU r = comm.sendData((byte) -1,(byte) 0,(byte) 0,(byte) 0,buf,(byte) 0);
+//        int a = 0;
+//
+//
+//        ResponseAPDU r2 = comm.sendData((byte) 4,(byte) 0,(byte) 0,(byte) 0,buf,(byte) 0);
+//        int b = 0;
+//
+//    }
 
     public void authentication(APDU apdu){
         byte[] buffer = apdu.getBuffer();
