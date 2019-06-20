@@ -105,6 +105,10 @@ public class Protocol  implements ISO7816{
         }
     }
 
+    public void test(){
+        ResponseAPDU response3 = comm.send((byte) 102, (byte) 2, (byte) 0, (byte) 0, (byte) 0);
+    }
+
     public void deposit(int deposit){
 
         System.out.println("[TERMINAL]: Deposit = " + deposit);
@@ -228,6 +232,7 @@ public class Protocol  implements ISO7816{
         return result;
     }
 
+    //Symmetrical encryption
     private byte[] encrypt(byte[] theKey, byte[] buffer, short msgSize) {
 
         // figure out the size in blocks
@@ -264,6 +269,7 @@ public class Protocol  implements ISO7816{
         return cipher;
     }
 
+    //Symmetrical decryption
     private byte[] decrypt(byte[] buffer){
         short len = Util.getShort(buffer, (short) 0);
         byte[] plain_text = new byte[len];
@@ -285,6 +291,7 @@ public class Protocol  implements ISO7816{
         return plain_text;
     }
 
+    /*
     public byte[] IntListToBytes(List<Integer> list){
 
         int length = 0;
@@ -302,7 +309,9 @@ public class Protocol  implements ISO7816{
         }
         return result;
     }
+    */
 
+    //Check card number
     public boolean Verify_Card_Number(int cn){
         if(cn == 5){
             return true;
@@ -312,6 +321,7 @@ public class Protocol  implements ISO7816{
         }
     }
 
+    //Check nonce
     public boolean Verify_Nonce(int n){
         if(n == nonce){
             return true;
@@ -321,10 +331,15 @@ public class Protocol  implements ISO7816{
         }
     }
 
+    /*Multiple protocols start with sharing the public key of the terminal and setting up the symmetric key.
+    This part of the protocol is implemented in this function.*/
     public boolean Share_Sym_Key(){
         byte[] temp = new byte[255];
+        //Get the exponent and modulus of the terminal key.
         short exponent_size = public_key_terminal.getExponent(temp, (short) 0);
         short modulus_size = public_key_terminal.getModulus(temp, exponent_size);
+
+        //Copy the nonce, exponent and modulus to the buffer.
         byte[] plain_text = new byte[exponent_size + modulus_size + 6];
         Util.setShort(plain_text,(short) 0, nonce);
         Util.setShort(plain_text,(short) 2, exponent_size);
@@ -333,48 +348,51 @@ public class Protocol  implements ISO7816{
         Util.arrayCopy(temp, exponent_size, plain_text, (short) (6 + exponent_size), modulus_size);
 
         System.out.println("-------------------- PHASE 1: T → C: (nT ++ cn? ++ pkT) --------------------");
+        //Send the public key of the terminal
         ResponseAPDU response = comm.sendData((byte) 3, (byte) 0, (byte) 0, (byte) 0,plain_text,(byte) 0);
 
         short response_length = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA));
         byte[] res = Arrays.copyOfRange(response.getBytes(), (OFFSET_CDATA + 2),
                 (OFFSET_CDATA + 2 + response_length));
 
+        //Decrypt card response
         byte[] plain = RSA_decrypt(private_key_terminal, res);
         System.out.print("[TERMINAL]: ");
         printBytes(plain);
 
+        //Retrieve the nonce and card number
         short card_nonce = Util.getShort(plain, (short) 0);
         short card_number = Util.getShort(plain, (short) 2);
 
-        if(Verify_Nonce(card_nonce)){
-            if(Verify_Card_Number(card_number)){
-                System.out.println("-------------------- PHASE 2: T → C: (nT ++ symkTC)pkC --------------------");
+        //Verify the nonce and card number
+        if(Verify_Nonce(card_nonce) && Verify_Card_Number(card_number)){
+            System.out.println("-------------------- PHASE 2: T → C: (nT ++ symkTC)pkC --------------------");
 
-                System.out.print("[TERMINAL]: ");
-                printBytes(theKey);
+            System.out.print("[TERMINAL]: ");
+            printBytes(theKey);
 
-                byte[] msg = new byte[theKey.length + 2];
-                Util.setShort(msg, (short)0, nonce);
-                Util.arrayCopy(theKey,(short) 0, msg, (short) 2, (short) theKey.length);
+            byte[] msg = new byte[theKey.length + 2];
+            Util.setShort(msg, (short)0, nonce);
+            Util.arrayCopy(theKey,(short) 0, msg, (short) 2, (short) theKey.length);
 
-                //TODO: change the line below this
-                public_key_card = public_key_terminal;
+            //TODO: change the line below this
+            public_key_card = public_key_terminal;
 
-                byte[] cipher2 = RSA_encrypt(public_key_card,msg);
-                msg = new byte[cipher2.length + 2];
-                Util.setShort(msg, (short) 0, (short) cipher2.length);
-                Util.arrayCopy(cipher2, (short) 0, msg, (short) 2, (short) cipher2.length);
+            //Encrypt the key
+            byte[] cipher2 = RSA_encrypt(public_key_card,msg);
+            msg = new byte[cipher2.length + 2];
+            Util.setShort(msg, (short) 0, (short) cipher2.length);
+            Util.arrayCopy(cipher2, (short) 0, msg, (short) 2, (short) cipher2.length);
 
-                ResponseAPDU response2 = comm.sendData((byte) 3, (byte) 1, (byte) 0, (byte) 0,msg,(byte) 0);
-                return true;
-            }else{
-                return false;
-            }
+            //Send the key
+            ResponseAPDU response2 = comm.sendData((byte) 3, (byte) 1, (byte) 0, (byte) 0,msg,(byte) 0);
+            return true;
         }else{
             return false;
         }
     }
 
+    /*Check the status code we received from the card*/
     public boolean check_status(short status){
         boolean result = false;
         switch (status){

@@ -29,17 +29,14 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
                 String str = ((JButton) src).getText();
                 switch (str){
                     case "Save":
-                        int k = strConvToInt(keysTF.getText());
-                        int cn = strConvToInt(cardNumbTF.getText());
-                        int iban = strConvToInt(ibanTF.getText());
+                        int balance = strConvToInt(balanceTF.getText());
                         int sl = strConvToInt(softLimitTF.getText());
                         int hl = strConvToInt(hardLimitTF.getText());
 
-                        System.out.println("Keys: " + Integer.toString(k));
-                        System.out.println("Card Number: " + Integer.toString(cn));
-                        System.out.println("IBAN: " + Integer.toString(iban));
+                        System.out.println("IBAN: " + Integer.toString(balance));
                         System.out.println("Soft Limit: " + Integer.toString(sl));
                         System.out.println("Hard Limit: " + Integer.toString(hl));
+
                         break;
                     case "RT":
                         switchToRT();
@@ -71,26 +68,13 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         Dimension dField = new Dimension(450, 25);
         JPanel p = new JPanel(new FlowLayout(SwingConstants.LEADING, 10, 10));
         p.setPreferredSize(new Dimension(500,330));
-        JLabel keysL = new JLabel("Keys: ");
-        keysTF = new JTextField("0");
-        keysL.setLabelFor(keysTF);
-        keysTF.setPreferredSize(dField);
-        p.add(keysL);
-        p.add(keysTF);
 
-        JLabel cardNumbL = new JLabel("Card Number: ");
-        cardNumbTF = new JTextField("0");
-        cardNumbL.setLabelFor(cardNumbTF);
-        cardNumbTF.setPreferredSize(dField);
-        p.add(cardNumbL);
-        p.add(cardNumbTF);
-
-        JLabel ibanL = new JLabel("IBAN: ");
-        ibanTF = new JTextField("0");
-        ibanL.setLabelFor(ibanTF);
-        ibanTF.setPreferredSize(dField);
+        JLabel ibanL = new JLabel("Balance: ");
+        balanceTF = new JTextField("0");
+        ibanL.setLabelFor(balanceTF);
+        balanceTF.setPreferredSize(dField);
         p.add(ibanL);
-        p.add(ibanTF);
+        p.add(balanceTF);
 
         JLabel softLimitL = new JLabel("Soft Limit: ");
         softLimitTF = new JTextField("0");
@@ -152,9 +136,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         }
     }
 
-    JTextField keysTF;
-    JTextField cardNumbTF;
-    JTextField ibanTF;
+    JTextField balanceTF;
     JTextField softLimitTF;
     JTextField hardLimitTF;
 

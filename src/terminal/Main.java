@@ -41,7 +41,7 @@ public class Main {
 
     public static void main(String[] args){
 
-        /*
+
         PaymentTerminal panel = new PaymentTerminal(frame);
         c.add(panel);
         frame.setResizable(true);
@@ -49,12 +49,14 @@ public class Main {
         frame.setSize(300,280);
         frame.setVisible(true);
         switchToRT();
-        */
+
 
 
         Protocol prot = new Protocol();
         prot.init();
-        prot.change_pin(1);
+        //prot.test();
+        //prot.change_pin(1);
+
 
 
 

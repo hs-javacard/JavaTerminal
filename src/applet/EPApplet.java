@@ -137,6 +137,7 @@ public class EPApplet extends Applet implements ISO7816 {
                 sendResponse(apdu, encSize);
                 break;
             default:
+                System.out.print("CARD: ERROR: CLA = " + (short)cla);
                 ISOException.throwIt(SW_CLA_NOT_SUPPORTED);
                 break;
         }
