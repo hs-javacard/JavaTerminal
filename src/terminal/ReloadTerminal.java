@@ -334,18 +334,6 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         }
     }
 
-    public void addBalance(){
-
-    }
-
-    public void changeSoftLimit(){
-
-    }
-
-    public void changePin(){
-
-    }
-
     private static final long serialVersionUID = 1L;
     static final String TITLE = "Reload Terminal";
     static final Font FONT = new Font("Monospaced", Font.BOLD, 24);

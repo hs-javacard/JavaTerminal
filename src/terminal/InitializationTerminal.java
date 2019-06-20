@@ -115,18 +115,6 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         }
     }
 
-    public void loadProfile(){
-        //Keys, card number, bank account number, soft / hard limit
-    }
-
-    public void changeProfile(){
-
-    }
-
-    public void decommissionCard(){
-
-    }
-
     public int strConvToInt(String str){
         try {
             return Integer.parseInt(str);

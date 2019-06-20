@@ -41,6 +41,7 @@ public class Protocol  implements ISO7816{
     public void init(){
         comm.init();
 
+        //Generate new RSA key
         KeyPair keyPair;
         keyPair = new KeyPair(KeyPair.ALG_RSA, KeyBuilder.LENGTH_RSA_1024);
         keyPair.genKeyPair();
@@ -66,6 +67,7 @@ public class Protocol  implements ISO7816{
 //
 //    }
 
+    //Authentication protocol
     public void authentication(APDU apdu){
         byte[] buffer = apdu.getBuffer();
         byte ins = buffer[OFFSET_INS];
@@ -92,11 +94,13 @@ public class Protocol  implements ISO7816{
         apdu.setOutgoingAndSend((short) 0, length);
     }
 
+    //Withdrawal protocol
     public void withdrawal(int payment){
 
         System.out.println("[TERMINAL]: Payment = " + payment);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
+        //Generate & shar symmetrical key
         if(Share_Sym_Key()){
             System.out.println("-------------------- PHASE 3: T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
 
@@ -107,11 +111,15 @@ public class Protocol  implements ISO7816{
             Util.setShort(msg, (short) 2, (short) payment);
             Util.setShort(msg, (short) 4, day_nr);
 
+            //Encrypt nonce + payment amount + current day number
             byte[] cipher3 = encrypt(theKey, msg, (short) msg.length);
             ResponseAPDU response3 = comm.sendData((byte) 2, (byte) 2, (byte) 0, (byte) 0,msg,(byte) 0);
+
+            //Get nonce and status code
             short received_nonce = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA));
             short status_code = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA + 2));
             System.out.println("[TERMINAL] status_code = " + status_code);
+            //Check status code
             if(check_status(status_code)){
                            /*
                         short new_balance = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA + 4));
@@ -122,21 +130,21 @@ public class Protocol  implements ISO7816{
         }
     }
 
-    public void test(){
-        ResponseAPDU response3 = comm.send((byte) 102, (byte) 2, (byte) 0, (byte) 0, (byte) 0);
-    }
-
+    //Deposit protocol
     public void deposit(int deposit){
 
         System.out.println("[TERMINAL]: Deposit = " + deposit);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
+        //Generate & share the symmetrical key
         if(Share_Sym_Key()) {
             System.out.println("-------------------- PHASE 3: T → C: (nT ++ “Deposit” ++ “amount”)symTC --------------------");
             byte[] msg = new byte[4];
             Util.setShort(msg, (short) 0, nonce);
             Util.setShort(msg, (short) 2, (short) deposit);
+            //Encrypt deposit amount
             byte[] cipher3 = encrypt(theKey, msg, (short) msg.length);
+            //Send data
             ResponseAPDU response3 = comm.sendData((byte) 3, (byte) 2, (byte) 0, (byte) 0, cipher3, (byte) 0);
                 /*
                 short balance_new = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA));
@@ -146,20 +154,27 @@ public class Protocol  implements ISO7816{
         }
     }
 
+    //Change soft limit protocol
     public void change_soft_limit(int soft_limit){
         System.out.println("[TERMINAL] New Soft Limit = " + soft_limit);
         byte[] plain_text = new byte[4];
         Util.setShort(plain_text, (short) 0, nonce);
         Util.setShort(plain_text, (short) 2, (short) soft_limit);
+
+        //Encrypt nonce + new soft limit
         byte[] cipher = encrypt(theKey, plain_text, (short) plain_text.length);
+        //Send encrypted data
         ResponseAPDU response = comm.sendData((byte) 1, (byte) 3, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
+        //Get status code
         short status_code = Util.getShort(response.getBytes(), (short) OFFSET_CDATA);
+        //Check status code
         if(check_status(status_code)){
             System.out.print("[TERMINAL] Change Soft Limit Success!!!");
         }
         //TODO: Save signed message to logs
     }
 
+    //Change pin protocol
     public void change_pin(int pin){
         System.out.println("[TERMINAL]: New PIN = " + pin);
 
@@ -172,19 +187,23 @@ public class Protocol  implements ISO7816{
         plain_text[5] = (byte) (pin >> 0);
 
         byte[] cipher = encrypt(theKey,plain_text,(short) plain_text.length);
+        //Send nonce + pin
         ResponseAPDU response = comm.sendData((byte) 0, (byte) 2, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
     }
 
+    //Check pin
     private boolean checkPin(APDU apdu) {
         return true;
     }
 
+    //Generate pin
     private void requestPIN(APDU apdu) {
         pin = Util.getShort(apdu.getBuffer(), (short) 1);
 
 
     }
 
+    //Generate card number
     private short requestCardNumber(APDU apdu) {
         byte[] buffer = apdu.getBuffer();
         cardNumber = Util.getShort(buffer, (short) 1);
@@ -203,6 +222,7 @@ public class Protocol  implements ISO7816{
         return 0;
     }
 
+    //Verify the status of the card in the server of the bank
     private boolean verifyCardStatus(APDU apdu, short cardNumber) {
         //TODO Terminal verifies if the card is not in
         // ‘Locked’ state (Blacklisted or Blocked)
@@ -224,6 +244,7 @@ public class Protocol  implements ISO7816{
         return false;
     }
 
+    //RSA encryption
     public byte[] RSA_encrypt(RSAPublicKey public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
         short length = (short) plain_text.length;
@@ -238,6 +259,7 @@ public class Protocol  implements ISO7816{
         return cipher;
     }
 
+    //RSA decryption
     public byte[] RSA_decrypt(RSAPrivateKey private_key, byte[] cipher){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);

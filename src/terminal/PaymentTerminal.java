@@ -34,15 +34,6 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
 
     }
 
-    public void removeMoney(){
-
-    }
-
-    private boolean checkPIN(short pin){
-        //Only needed when over soft limit
-        return false;
-    }
-
     @Override
     public void actionPerformed(ActionEvent ae) {
         try {
