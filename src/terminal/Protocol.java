@@ -39,9 +39,9 @@ public class Protocol  implements ISO7816{
     static private final byte INIT_CLA = (byte) 0xd0;
     static private final byte DEPOSIT_CLA = (byte) 0xd4;
 
-    public Protocol(CardThread ct){
+    public Protocol(CardThread ct, Logger logger){
         comm = new Communication(ct);
-        log = new Logger();
+        log = logger; //new Logger();
     }
 
     public void init(){
@@ -294,9 +294,9 @@ public class Protocol  implements ISO7816{
     public byte[] RSA_encrypt(RSAPublicKey public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
         short length = (short) plain_text.length;
-        byte[] temp_array = new byte[plain_text.length + 2];
+        byte[] temp_array = new byte[plain_text.length];// + 2];
         Util.setShort(temp_array,(short) 0, length);
-        Util.arrayCopy(plain_text,(short) 0, temp_array, (short) 2, (short)plain_text.length);
+        Util.arrayCopy(plain_text,(short) 0, temp_array, (short) 0, (short)plain_text.length);
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
 
         rsaCipher.init(public_key, Cipher.MODE_ENCRYPT);
@@ -351,7 +351,7 @@ public class Protocol  implements ISO7816{
         */
 
         Util.arrayCopy(ivdata, (short) 0, cipher, (short) (encSize + 2), (short) 16);
-        Util.setShort(cipher, (short) 0, msgSize);
+        Util.setShort(cipher, (short) 0, encSize); //msgSize);
 
         return cipher;
     }
@@ -476,14 +476,22 @@ public class Protocol  implements ISO7816{
             //TODO: change the line below this
             //public_key_card = public_key_terminal;
 
+            // Get the public key of the card
+            byte[] exp = log.getExp(card_number);
+            byte[] mod = log.getMod(card_number);
+
+            public_key_card = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
+            public_key_card.setExponent(exp,(short) 0, (short) exp.length);
+            public_key_card.setModulus(mod,(short)0, (short) mod.length);
+
             //Encrypt the key
             byte[] cipher2 = RSA_encrypt(public_key_card,msg);
-            msg = new byte[cipher2.length + 2];
-            Util.setShort(msg, (short) 0, (short) cipher2.length);
-            Util.arrayCopy(cipher2, (short) 0, msg, (short) 2, (short) cipher2.length);
+//            msg = new byte[cipher2.length + 2];
+//            Util.setShort(msg, (short) 0, (short) cipher2.length);
+//            Util.arrayCopy(cipher2, (short) 0, msg, (short) 2, (short) cipher2.length);
 
             //Send the key
-            ResponseAPDU response2 = comm.sendData((byte) 3, (byte) 1, (byte) 0, (byte) 0,msg,(byte) 0);
+            ResponseAPDU response2 = comm.sendData((byte) CLA, (byte) 1, (byte) 0, (byte) 0, cipher2, (byte) 0);
             return true;
         }else{
             return false;
