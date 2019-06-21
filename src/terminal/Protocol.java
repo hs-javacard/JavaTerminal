@@ -394,7 +394,7 @@ public class Protocol  implements ISO7816{
 
     //Check card number
     public boolean Verify_Card_Number(int cn){
-        if(cn == 5){
+        if(cn == 9){
             return true;
         }else{
             System.out.print("[TERMINAL] ERROR: Card Number does not match");
@@ -432,9 +432,9 @@ public class Protocol  implements ISO7816{
         //Send the public key of the terminal
         ResponseAPDU response = comm.sendData((byte) 3, (byte) 0, (byte) 0, (byte) 0,plain_text,(byte) 0);
 
-        short response_length = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA));
-        byte[] res = Arrays.copyOfRange(response.getBytes(), (OFFSET_CDATA + 2),
-                (OFFSET_CDATA + 2 + response_length));
+        short response_length = Util.getShort(response.getBytes(), (short)(0));
+        byte[] res = Arrays.copyOfRange(response.getBytes(), (2),
+                (2 + response_length));
 
         //Decrypt card response
         byte[] plain = RSA_decrypt(private_key_terminal, res);
@@ -457,7 +457,7 @@ public class Protocol  implements ISO7816{
             Util.arrayCopy(theKey,(short) 0, msg, (short) 2, (short) theKey.length);
 
             //TODO: change the line below this
-            public_key_card = public_key_terminal;
+            //public_key_card = public_key_terminal;
 
             //Encrypt the key
             byte[] cipher2 = RSA_encrypt(public_key_card,msg);
