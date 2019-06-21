@@ -73,7 +73,7 @@ public class Protocol  implements ISO7816{
 
     //Initialization protocol
     public void initialization(short balance, short soft_limit, short hard_limit){
-        System.out.print("[TERMINAL]: Initialization: Balance = " + balance + ", Soft Limit = " + soft_limit +
+        System.out.println("[TERMINAL]: Initialization: Balance = " + balance + ", Soft Limit = " + soft_limit +
                 ", Hard Limit = " + hard_limit);
 
         //Generate and log a new card number and pin
@@ -91,14 +91,15 @@ public class Protocol  implements ISO7816{
         ResponseAPDU response = comm.sendData((byte) -1, (byte) 0, (byte) 0, (byte) 0, plain_text,(byte) 0);
 
         //Retrieve the exponent and modulus of the card public key
-        byte claCounter = response.getBytes()[OFFSET_CDATA];
-        short exp_size = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA+1));
-        short mod_size = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA+3));
+        byte claCounter = response.getBytes()[0];
+        short exp_size = Util.getShort(response.getBytes(), (short)(1));
+        short mod_size = Util.getShort(response.getBytes(), (short)(3));
         byte[] exp = new byte[exp_size];
-        Util.arrayCopy(response.getBytes(), (short)(OFFSET_CDATA + 5), exp, (short) 0, exp_size);
+        Util.arrayCopy(response.getBytes(), (short)(5), exp, (short) 0, exp_size);
         byte[] mod = new byte[mod_size];
-        Util.arrayCopy(response.getBytes(), (short)(OFFSET_CDATA + 5 + exp_size), exp, (short) 0, mod_size);
+        Util.arrayCopy(response.getBytes(), (short)(5 + exp_size), mod, (short) 0, mod_size);
         //Save the public key of the card
+        public_key_card = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
         public_key_card.setExponent(exp, (short) 0, exp_size);
         public_key_card.setModulus(mod, (short) 0, mod_size);
 
