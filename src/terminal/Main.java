@@ -52,20 +52,22 @@ public class Main {
         ct = new CardThread();
         ct.start();
 
+
+
         ReloadTerminal panel = new ReloadTerminal(frame, ct);
 
         //PaymentTerminal panel = new PaymentTerminal(frame);
 
-        c.add(panel);
+        /*c.add(panel);
         frame.setResizable(true);
         frame.pack();
         frame.setSize(300,280);
         frame.setVisible(true);
-        switchToRT();
+        switchToIT();*/
 
 
-//        Protocol prot = new Protocol();
-//        prot.init();
+        Protocol prot = new Protocol(ct);
+        prot.init();
 //        prot.change_soft_limit(25);
 
 

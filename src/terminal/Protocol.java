@@ -14,6 +14,8 @@ import static terminal.Communication.byteArrayToHex;
 
 public class Protocol  implements ISO7816{
 
+    Logger log;
+
     private short cardNumber;
     private short cardState;
     private short pin;
@@ -36,6 +38,7 @@ public class Protocol  implements ISO7816{
 
     public Protocol(CardThread ct){
         comm = new Communication(ct);
+        log = new Logger();
     }
 
     public void init(){
@@ -48,6 +51,7 @@ public class Protocol  implements ISO7816{
 
         public_key_terminal = (RSAPublicKey) keyPair.getPublic();
         private_key_terminal = (RSAPrivateKey) keyPair.getPrivate();
+
     }
 
 //    public void testt(){
@@ -67,26 +71,64 @@ public class Protocol  implements ISO7816{
 //
 //    }
 
-    //Authentication protocol
-    public void authentication(APDU apdu){
-        byte[] buffer = apdu.getBuffer();
-        byte ins = buffer[OFFSET_INS];
-        boolean authenticated = false;
+    //Initialization protocol
+    public void initialization(short balance, short soft_limit, short hard_limit){
+        System.out.print("[TERMINAL]: Initialization: Balance = " + balance + ", Soft Limit = " + soft_limit +
+                ", Hard Limit = " + hard_limit);
 
-        while (!authenticated)
-            switch (ins) {
-                case 0: // request card number
-                    cardNumber = requestCardNumber(apdu);
-                    break;
-                case 1: // stateOfCard
-                    verifyCardStatus(apdu, cardNumber);
-                    break;
-                case 2: // check pin
-                    authenticated = checkPin(apdu);
-                    break;
-                default:
-                    ISOException.throwIt(SW_INCORRECT_P1P2);
-                    break;
+        //Generate and log a new card number and pin
+        short card_number = getNewCardNumber();
+        short pin = getNewPin();
+        log.SavePin(card_number, pin);
+
+        //Place the information in the buffer
+        byte[] plain_text = new byte[10];
+        Util.setShort(plain_text, (short) 0, card_number);
+        Util.setShort(plain_text, (short) 2, balance);
+        Util.setShort(plain_text, (short) 4, pin);
+        Util.setShort(plain_text, (short) 6, soft_limit);
+        Util.setShort(plain_text, (short) 8, hard_limit);
+        ResponseAPDU response = comm.sendData((byte) -1, (byte) 0, (byte) 0, (byte) 0, plain_text,(byte) 0);
+
+        //Retrieve the exponent and modulus of the card public key
+        byte claCounter = response.getBytes()[OFFSET_CDATA];
+        short exp_size = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA+1));
+        short mod_size = Util.getShort(response.getBytes(), (short)(OFFSET_CDATA+3));
+        byte[] exp = new byte[exp_size];
+        Util.arrayCopy(response.getBytes(), (short)(OFFSET_CDATA + 5), exp, (short) 0, exp_size);
+        byte[] mod = new byte[mod_size];
+        Util.arrayCopy(response.getBytes(), (short)(OFFSET_CDATA + 5 + exp_size), exp, (short) 0, mod_size);
+        //Save the public key of the card
+        public_key_card.setExponent(exp, (short) 0, exp_size);
+        public_key_card.setModulus(mod, (short) 0, mod_size);
+
+        log.SaveExp(card_number, exp);
+        log.SaveMod(card_number, mod);
+    }
+
+    //Authentication protocol
+    public boolean authentication(byte cla, short pin){
+        if(Share_Sym_Key()){
+
+            byte[] plain_text = new byte[4];
+            Util.setShort(plain_text, (short) 0, nonce);
+            Util.setShort(plain_text, (short) 2, pin);
+            byte[] cipher = encrypt(theKey, plain_text, (short) plain_text.length);
+            ResponseAPDU response = comm.sendData(cla, (byte) 2, (byte) 0, (byte) 0, cipher,(byte) 0);
+
+            byte[] plain_response = decrypt(response.getBytes());
+
+            byte claCounter = plain_response[0];
+            short card_nonce = Util.getShort(plain_response, (short) (1));
+            short status_code = (short) plain_response[3];
+
+            if(status_code == -1){
+                return false;
+            }
+
+            return true;
+        }else{
+            return false;
         }
     }
 
@@ -454,6 +496,15 @@ public class Protocol  implements ISO7816{
         return  result;
     }
 
+    public short getNewCardNumber(){
+        //TODO: generate new card number
+        return 9;
+    }
+
+    public short getNewPin(){
+        //TODO: generate new pin
+        return 0606;
+    }
     public void printBytes(byte[] buffer){
         System.out.println(byteArrayToHex(buffer));
     }
@@ -461,8 +512,3 @@ public class Protocol  implements ISO7816{
 }
 
 
-/*TODO: for Anass
-* Withdrawal
-* Deposit
-* Change pin
-* */

@@ -33,9 +33,12 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
                         int sl = strConvToInt(softLimitTF.getText());
                         int hl = strConvToInt(hardLimitTF.getText());
 
-                        System.out.println("IBAN: " + Integer.toString(balance));
+                        /*
+                        System.out.println("Balance: " + Integer.toString(balance));
                         System.out.println("Soft Limit: " + Integer.toString(sl));
                         System.out.println("Hard Limit: " + Integer.toString(hl));
+                        */
+                        protocol.initialization((short) balance, (short) sl, (short) hl);
 
                         break;
                     case "RT":
