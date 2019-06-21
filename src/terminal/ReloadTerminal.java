@@ -96,15 +96,15 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                                 System.out.println("User PIN input: " + Integer.toString(pin));
                                 switch (prev_status){
                                     case CHANGE_PIN:
-                                        protocol.authentication((byte) 0, (short) pin);
+                                        protocol.authentication((byte) 0xd1, (short) pin);
                                         menuToSTART();
                                         break;
                                     case SOFT_LIMIT:
-                                        protocol.authentication((byte) 1, (short) pin);
+                                        protocol.authentication((byte) 0xd2, (short) pin);
                                         menuToSTART();
                                         break;
                                     case BALANCE:
-                                        protocol.authentication((byte) 3, (short) pin);
+                                        protocol.authentication((byte) 0xd4, (short) pin);
                                         menuToSTART();
                                         break;
                                     default:

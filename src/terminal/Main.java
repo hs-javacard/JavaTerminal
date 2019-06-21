@@ -58,16 +58,16 @@ public class Main {
 
         //PaymentTerminal panel = new PaymentTerminal(frame);
 
-        /*c.add(panel);
+        c.add(panel);
         frame.setResizable(true);
         frame.pack();
         frame.setSize(300,280);
         frame.setVisible(true);
-        switchToIT();*/
+        switchToIT();
 
 
-        Protocol prot = new Protocol(ct);
-        prot.init();
+//        Protocol prot = new Protocol(ct);
+//        prot.init();
 //        prot.change_soft_limit(25);
 
 
@@ -184,7 +184,7 @@ class CardThread extends Thread {
 //                                    setEnabled(true);
 
                                     // Wait for the card to be removed
-                                    while (c.isCardPresent());
+                                    while (c.isCardPresent()){}
 //                                    setEnabled(false);
 //                                        setText(MSG_DISABLED);
                                     break;

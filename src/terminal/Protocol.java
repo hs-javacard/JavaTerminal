@@ -36,6 +36,9 @@ public class Protocol  implements ISO7816{
     private byte[] aesWorkspace;
     byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+    static private final byte INIT_CLA = (byte) 0xd0;
+    static private final byte DEPOSIT_CLA = (byte) 0xd4;
+
     public Protocol(CardThread ct){
         comm = new Communication(ct);
         log = new Logger();
@@ -88,7 +91,7 @@ public class Protocol  implements ISO7816{
         Util.setShort(plain_text, (short) 4, pin);
         Util.setShort(plain_text, (short) 6, soft_limit);
         Util.setShort(plain_text, (short) 8, hard_limit);
-        ResponseAPDU response = comm.sendData((byte) -1, (byte) 0, (byte) 0, (byte) 0, plain_text,(byte) 0);
+        ResponseAPDU response = comm.sendData((byte) INIT_CLA, (byte) 0, (byte) 0, (byte) 0, plain_text,(byte) 0);
 
         //Retrieve the exponent and modulus of the card public key
         byte claCounter = response.getBytes()[0];
@@ -109,7 +112,7 @@ public class Protocol  implements ISO7816{
 
     //Authentication protocol
     public boolean authentication(byte cla, short pin){
-        if(Share_Sym_Key()){
+        if(Share_Sym_Key(cla)){
 
             byte[] plain_text = new byte[4];
             Util.setShort(plain_text, (short) 0, nonce);
@@ -143,8 +146,8 @@ public class Protocol  implements ISO7816{
         System.out.println("[TERMINAL]: Payment = " + payment);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
-        //Generate & shar symmetrical key
-        if(Share_Sym_Key()){
+        //Generate & share symmetrical key
+        if(Share_Sym_Key((byte) 2)){
             System.out.println("-------------------- PHASE 3: T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
 
             short day_nr = 69;
@@ -180,7 +183,7 @@ public class Protocol  implements ISO7816{
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
         //Generate & share the symmetrical key
-        if(Share_Sym_Key()) {
+        if(Share_Sym_Key((byte) DEPOSIT_CLA)) {
             System.out.println("-------------------- PHASE 3: T → C: (nT ++ “Deposit” ++ “amount”)symTC --------------------");
             byte[] msg = new byte[4];
             Util.setShort(msg, (short) 0, nonce);
@@ -303,15 +306,17 @@ public class Protocol  implements ISO7816{
     }
 
     //RSA decryption
-    public byte[] RSA_decrypt(RSAPrivateKey private_key, byte[] cipher){
+    public byte[] RSA_decrypt(RSAPrivateKey private_key, byte[] cipher, short ctlength){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
         rsaCipher.init(private_key, Cipher.MODE_DECRYPT);
-        rsaCipher.doFinal(cipher, (short) 0, (short) cipher.length, plain_text, (short) 0);
+//        short cpl = (short) cipher.length;
+        rsaCipher.doFinal(cipher, (short) 0, ctlength, plain_text, (short) 0);
         short length = Util.getShort(plain_text, (short) 0);
-        byte[] result = new byte[length];
-        Util.arrayCopy(plain_text, (short) 2, result, (short) 0 , length);
-        return result;
+//        byte[] result = new byte[length];
+//        Util.arrayCopy(plain_text, (short) 2, result, (short) 0 , length);
+        return plain_text;
+//        return result;
     }
 
     //Symmetrical encryption
@@ -415,11 +420,11 @@ public class Protocol  implements ISO7816{
 
     /*Multiple protocols start with sharing the public key of the terminal and setting up the symmetric key.
     This part of the protocol is implemented in this function.*/
-    public boolean Share_Sym_Key(){
+    public boolean Share_Sym_Key(byte CLA){
         byte[] temp = new byte[255];
         //Get the exponent and modulus of the terminal key.
         short exponent_size = public_key_terminal.getExponent(temp, (short) 0);
-        short modulus_size = public_key_terminal.getModulus(temp, exponent_size);
+        short modulus_size = (short) (public_key_terminal.getModulus(temp, exponent_size) -1);
 
         //Copy the nonce, exponent and modulus to the buffer.
         byte[] plain_text = new byte[exponent_size + modulus_size + 6];
@@ -427,24 +432,35 @@ public class Protocol  implements ISO7816{
         Util.setShort(plain_text,(short) 2, exponent_size);
         Util.setShort(plain_text,(short) 4, modulus_size);
         Util.arrayCopy(temp, (short) 0, plain_text, (short) 6, exponent_size);
-        Util.arrayCopy(temp, exponent_size, plain_text, (short) (6 + exponent_size), modulus_size);
+        Util.arrayCopy(temp, (short) (1+exponent_size), plain_text, (short) (6 + exponent_size), modulus_size); // the one is for a leading zero
 
         System.out.println("-------------------- PHASE 1: T → C: (nT ++ cn? ++ pkT) --------------------");
         //Send the public key of the terminal
-        ResponseAPDU response = comm.sendData((byte) 3, (byte) 0, (byte) 0, (byte) 0,plain_text,(byte) 0);
+        ResponseAPDU response = comm.sendData(CLA, (byte) 0, (byte) 0, (byte) 0,plain_text,(byte) 0);
 
-        short response_length = Util.getShort(response.getBytes(), (short)(0));
-        byte[] res = Arrays.copyOfRange(response.getBytes(), (2),
-                (2 + response_length));
+        // at 0, cla counter?
+        //
+
+
+//        short response_length = Util.getShort(response.getBytes(), (short)(0));
+//        byte[] res = Arrays.copyOfRange(response.getBytes(), (2),
+//                (2 + response_length));
+        short ln = (short) response.getNr();
+        byte[] res = Arrays.copyOfRange(response.getBytes(), 0, ln);
+
+        short reslen = (short) response.getBytes().length;
+
+
 
         //Decrypt card response
-        byte[] plain = RSA_decrypt(private_key_terminal, res);
+        byte[] plain = RSA_decrypt(private_key_terminal, res, ln);
         System.out.print("[TERMINAL]: ");
         printBytes(plain);
 
         //Retrieve the nonce and card number
-        short card_nonce = Util.getShort(plain, (short) 0);
-        short card_number = Util.getShort(plain, (short) 2);
+        byte cla_counter = plain[0];
+        short card_nonce = Util.getShort(plain, (short) 1);
+        short card_number = Util.getShort(plain, (short) 3);
 
         //Verify the nonce and card number
         if(Verify_Nonce(card_nonce) && Verify_Card_Number(card_number)){
