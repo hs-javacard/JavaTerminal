@@ -28,10 +28,15 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
                 char c = ((JButton) src).getText().charAt(0);
                 String str = ((JButton) src).getText();
                 switch (str){
+                    case "STOP":
+                        isError = false;
+                        resetTextFields();
+                        break;
                     case "Save":
-                        int balance = strConvToInt(balanceTF.getText());
-                        int sl = strConvToInt(softLimitTF.getText());
-                        int hl = strConvToInt(hardLimitTF.getText());
+                        if(!isError){
+                            int balance = Integer.parseInt(balanceTF.getText());
+                            int sl = Integer.parseInt(softLimitTF.getText());
+                            int hl = Integer.parseInt(hardLimitTF.getText());
 
                         /*
                         System.out.println("Balance: " + Integer.toString(balance));
@@ -39,7 +44,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
                         System.out.println("Hard Limit: " + Integer.toString(hl));
                         */
                         protocol.initialization((short) balance, (short) sl, (short) hl);
-
+                        }
                         break;
                     case "RT":
                         switchToRT();
@@ -55,7 +60,8 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
                 }
             }
         } catch (Exception e) {
-            System.out.println(MSG_ERROR);
+            System.out.println("ERROR: Press the save button to reset");
+            setTextFieldsToERROR();
         }
     }
 
@@ -94,7 +100,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         p.add(hardLimitTF);
 
 
-        JPanel gp = new JPanel(new GridLayout(1,3));
+        JPanel gp = new JPanel(new GridLayout(1,4));
         JButton buttonPT = new JButton("PT");
         buttonPT.setBackground(Color.GRAY);
         buttonPT.addActionListener(this);
@@ -102,10 +108,17 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         buttonRT.setBackground(Color.GRAY);
         buttonRT.addActionListener(this);
         JButton buttonSave = new JButton("Save");
+        buttonSave.setBackground(Color.green);
         buttonSave.addActionListener(this);
+        JButton buttonStop = new JButton("STOP");
+        buttonStop.setBackground(Color.red);
+        buttonStop.addActionListener(this);
+
+        gp.add(buttonStop);
         gp.add(buttonPT);
         gp.add(buttonRT);
         gp.add(buttonSave);
+
 
         add(p);
         add(gp);
@@ -118,18 +131,32 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         }
     }
 
-    public int strConvToInt(String str){
-        try {
-            return Integer.parseInt(str);
-        }catch (Exception e){
-            System.out.println(MSG_ERROR + "strConvToInt()");
-            return -1;
-        }
+    public void setTextFieldsToERROR(){
+        balanceTF.setText(MSG_ERROR + "Press STOP to RESET");
+        softLimitTF.setText(MSG_ERROR + "Press STOP to RESET");
+        hardLimitTF.setText(MSG_ERROR + "Press STOP to RESET");
+
+        balanceTF.setEditable(false);
+        softLimitTF.setEditable(false);
+        hardLimitTF.setEditable(false);
+
+        isError = true;
+    }
+
+    public void resetTextFields(){
+        balanceTF.setText("0");
+        softLimitTF.setText("0");
+        hardLimitTF.setText("0");
+
+        balanceTF.setEditable(true);
+        softLimitTF.setEditable(true);
+        hardLimitTF.setEditable(true);
     }
 
     JTextField balanceTF;
     JTextField softLimitTF;
     JTextField hardLimitTF;
+    boolean isError = false;
 
     private static final long serialVersionUID = 1L;
     static final String TITLE = "Initialization Terminal";

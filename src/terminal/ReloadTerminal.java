@@ -87,85 +87,89 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
 //                        protocol.testt();
                         break;
                     case "STOP":
+                        isERROR = false;
                         menuToSTART();
                         break;
                     case "OK":
-                        switch (status){
-                            case PIN:
-                                int pin = Integer.parseInt(secondDisplayString);
-                                System.out.println("User PIN input: " + Integer.toString(pin));
-                                switch (prev_status){
-                                    case CHANGE_PIN:
-                                        protocol.authentication((byte) 0xd1, (short) pin);
-                                        menuToSTART();
-                                        break;
-                                    case SOFT_LIMIT:
-                                        protocol.authentication((byte) 0xd2, (short) pin);
-                                        menuToSTART();
-                                        break;
-                                    case BALANCE:
-                                        protocol.authentication((byte) 0xd4, (short) pin);
-                                        menuToSTART();
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                break;
-                            case MENU:
-                                switch (fourthDisplayString){
-                                    case "1":
-                                        menuToBALANCE();
-                                        break;
-                                    case "2":
-                                        menuToSOFT_LIMIT();
-                                        break;
-                                    case "3":
-                                        menuToCHANGE_PIN();
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                break;
-                            case BALANCE:
-                                balance = Integer.parseInt(secondDisplayString);
-                                System.out.println("User Balance input: " + Integer.toString(balance));
+                        if(!isERROR){
+                            switch (status){
+                                case PIN:
+                                    int pin = Integer.parseInt(secondDisplayString);
+                                    System.out.println("User PIN input: " + Integer.toString(pin));
+                                    switch (prev_status){
+                                        case CHANGE_PIN:
+                                            //protocol.authentication((byte) 0xd1, (short) pin);
+                                            menuToSTART();
+                                            break;
+                                        case SOFT_LIMIT:
+                                            //protocol.authentication((byte) 0xd2, (short) pin);
+                                            menuToSTART();
+                                            break;
+                                        case BALANCE:
+                                            //protocol.authentication((byte) 0xd4, (short) pin);
+                                            menuToSTART();
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                case MENU:
+                                    switch (fourthDisplayString){
+                                        case "1":
+                                            menuToBALANCE();
+                                            break;
+                                        case "2":
+                                            menuToSOFT_LIMIT();
+                                            break;
+                                        case "3":
+                                            menuToCHANGE_PIN();
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                case BALANCE:
+                                    balance = Integer.parseInt(secondDisplayString);
+                                    System.out.println("User Balance input: " + Integer.toString(balance));
 
-                                menuToPIN();
-                                break;
-                            case SOFT_LIMIT:
-                                limit = Integer.parseInt(secondDisplayString);
-                                System.out.println("User Soft Limit input: " + Integer.toString(limit));
+                                    menuToPIN();
+                                    break;
+                                case SOFT_LIMIT:
+                                    limit = Integer.parseInt(secondDisplayString);
+                                    System.out.println("User Soft Limit input: " + Integer.toString(limit));
 
-                                menuToPIN();
-                                break;
-                            case CHANGE_PIN:
-                                newPin = Integer.parseInt(secondDisplayString);
-                                System.out.println("User New PIN input: " + Integer.toString(newPin));
+                                    menuToPIN();
+                                    break;
+                                case CHANGE_PIN:
+                                    newPin = Integer.parseInt(secondDisplayString);
+                                    System.out.println("User New PIN input: " + Integer.toString(newPin));
 
-                                menuToPIN();
-                                break;
+                                    menuToPIN();
+                                    break;
+                            }
                         }
-
                         break;
                     case "CORR":
-                        switch (status){
-                            case PIN:
-                                secondDisplayString = "";
-                                break;
-                            case MENU:
-                                fourthDisplayString = "";
-                                break;
-                            case BALANCE:
-                                secondDisplayString = "";
-                                break;
-                            case SOFT_LIMIT:
-                                secondDisplayString = "";
-                                break;
-                            case CHANGE_PIN:
-                                secondDisplayString = "";
-                                break;
+                        if(!isERROR){
+                            switch (status){
+                                case PIN:
+                                    secondDisplayString = "";
+                                    break;
+                                case MENU:
+                                    fourthDisplayString = "";
+                                    break;
+                                case BALANCE:
+                                    secondDisplayString = "";
+                                    break;
+                                case SOFT_LIMIT:
+                                    secondDisplayString = "";
+                                    break;
+                                case CHANGE_PIN:
+                                    secondDisplayString = "";
+                                    break;
+                            }
+                            updateText();
                         }
-                        updateText();
                         break;
                     case "RT":
                         switchToRT();
@@ -177,34 +181,37 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                         switchToIT();
                         break;
                     default:
-                        switch (status){
-                            case PIN:
-                                secondDisplayString += str;
-                                break;
-                            case MENU:
-                                fourthDisplayString += str;
-                                break;
-                            case BALANCE:
-                                secondDisplayString += str;
-                                break;
-                            case SOFT_LIMIT:
-                                secondDisplayString += str;
-                                break;
-                            case CHANGE_PIN:
-                                secondDisplayString += str;
-                                break;
+                        if(!isERROR){
+                            switch (status){
+                                case PIN:
+                                    secondDisplayString += str;
+                                    break;
+                                case MENU:
+                                    fourthDisplayString += str;
+                                    break;
+                                case BALANCE:
+                                    secondDisplayString += str;
+                                    break;
+                                case SOFT_LIMIT:
+                                    secondDisplayString += str;
+                                    break;
+                                case CHANGE_PIN:
+                                    secondDisplayString += str;
+                                    break;
+                            }
+                            updateText();
                         }
-                        updateText();
                         break;
                 }
             }
         } catch (Exception e) {
+            isERROR = true;
             System.out.println(MSG_ERROR);
             System.out.println(e.getMessage());
             firstDisplayString = MSG_ERROR;
             secondDisplayString = MSG_ERROR;
             thirdDisplayString = MSG_ERROR;
-            fourthDisplayString = MSG_ERROR;
+            fourthDisplayString = "Press STOP to RESET";
             updateText();
             status = STATUS.PIN;
         }
@@ -362,6 +369,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
     int balance;
     int newPin;
     int limit;
+    boolean isERROR = false;
 
     enum STATUS{
         PIN,

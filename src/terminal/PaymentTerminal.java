@@ -43,6 +43,7 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                 String str = ((JButton) src).getText();
                 switch (str){
                     case "STOP":
+                        isERROR = false;
                         firstDisplayString = "To Be Paid:";
                         secondDisplayString = "";
                         thirdDisplayString = "";
@@ -50,44 +51,69 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                         status = STATUS.ToBePaid;
                         break;
                     case "OK":
-                        switch(status){
-                            case ToBePaid:
-                                int amountToBePaid = Integer.parseInt(secondDisplayString);
-                                System.out.println("To Be Paid Amount: " + Integer.toString(amountToBePaid));
-                                firstDisplayString = "To Be Paid: " + secondDisplayString;
-                                secondDisplayString = "Input PIN: ";
-                                status = STATUS.InputPIN;
-                                break;
-                            case InputPIN:
-                                int pin = Integer.parseInt(thirdDisplayString);
-                                System.out.println("User PIN input: " + Integer.toString(pin));
-                                firstDisplayString = "PIN sent to card";
-                                secondDisplayString = "";
-                                thirdDisplayString = "";
-                                status = STATUS.HasPaid;
-                                break;
-                            case HasPaid:
-                                firstDisplayString = "To Be Paid:";
-                                secondDisplayString = "";
-                                thirdDisplayString = "";
-                                status = STATUS.ToBePaid;
-                                break;
+                        if(!isERROR){
+                            switch(status){
+                                case ToBePaid:
+                                    amountToBePaid = Integer.parseInt(secondDisplayString);
+                                    System.out.println("To Be Paid Amount: " + Integer.toString(amountToBePaid));
+                                    firstDisplayString = "To Be Paid: " + secondDisplayString;
+                                    secondDisplayString = "Input PIN: ";
+                                    status = STATUS.InputPIN;
+                                    break;
+                                case InputPIN:
+                                    int pin = Integer.parseInt(thirdDisplayString);
+                                    System.out.println("User PIN input: " + Integer.toString(pin));
+                                    firstDisplayString = "";
+                                    secondDisplayString = "";
+                                    thirdDisplayString = "";
+                                /*
+                                if(protocol.authentication((byte) 0xd0,(short) pin)){
+                                    if(protocol.withdrawal(amountToBePaid)){
+                                        status = STATUS.HasPaid;
+                                    }
+                                }else{
+                                    status = STATUS.ERROR;
+                                }*/
+
+                                    if(true){
+                                        if(true){
+                                            status = STATUS.HasPaid;
+                                            firstDisplayString = "Transaction Complete";
+                                            secondDisplayString = "Press OK to repeat";
+                                            thirdDisplayString = "";
+                                        }else{
+                                            throw new Exception("Not enough balance");
+                                        }
+                                    }else{
+                                        throw new Exception("Wrong PIN");
+                                    }
+                                    break;
+                                case HasPaid:
+                                    firstDisplayString = "To Be Paid:";
+                                    secondDisplayString = "";
+                                    thirdDisplayString = "";
+                                    status = STATUS.ToBePaid;
+                                    break;
+                            }
+                            updateText();
                         }
-                        updateText();
                         break;
                     case "CORR":
-                        switch(status){
-                            case ToBePaid:
-                                secondDisplayString = "";
-                                break;
-                            case InputPIN:
-                                thirdDisplayString = "";
-                                break;
-                            case HasPaid:
-
-                                break;
+                        if(!isERROR){
+                            switch(status){
+                                case ToBePaid:
+                                    secondDisplayString = "";
+                                    break;
+                                case InputPIN:
+                                    thirdDisplayString = "";
+                                    break;
+                                case HasPaid:
+                                    secondDisplayString = "";
+                                    thirdDisplayString = "";
+                                    break;
+                            }
+                            updateText();
                         }
-                        updateText();
                         break;
                     case "RT":
                         switchToRT();
@@ -99,26 +125,29 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                         switchToIT();
                         break;
                     default:
-                        switch(status){
-                            case ToBePaid:
-                                secondDisplayString += str;
-                                break;
-                            case InputPIN:
-                                thirdDisplayString += str;
-                                break;
-                            case HasPaid:
+                        if(!isERROR){
+                            switch(status){
+                                case ToBePaid:
+                                    secondDisplayString += str;
+                                    break;
+                                case InputPIN:
+                                    thirdDisplayString += str;
+                                    break;
+                                case HasPaid:
 
-                                break;
+                                    break;
+                            }
+                            updateText();
                         }
-                        updateText();
                         break;
                 }
             }
         } catch (Exception e) {
-            System.out.println(MSG_ERROR);
+            isERROR = true;
             firstDisplayString = MSG_ERROR;
             secondDisplayString = MSG_ERROR;
-            thirdDisplayString = MSG_ERROR;
+            thirdDisplayString = "Press STOP to RESET";
+            System.out.println("ERROR: Press the STOP button to reset");
             updateText();
             status = STATUS.ToBePaid;
         }
@@ -241,10 +270,13 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
     JTextField firstDisplay;
     JPanel keypad;
     STATUS status = STATUS.ToBePaid;
+    int amountToBePaid = 0;
+    boolean isERROR = false;
 
     enum STATUS{
         ToBePaid,
         InputPIN,
+        ERROR,
         HasPaid;
     }
 

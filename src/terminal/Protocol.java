@@ -141,7 +141,7 @@ public class Protocol  implements ISO7816{
     }
 
     //Withdrawal protocol
-    public void withdrawal(int payment){
+    public boolean withdrawal(int payment){
 
         System.out.println("[TERMINAL]: Payment = " + payment);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
@@ -172,7 +172,12 @@ public class Protocol  implements ISO7816{
                         System.out.println("[TERMINAL] New card balance = " + new_balance);
                         */
                 //TODO: save signed message to logs
+                return true;
+            }else{
+                return false;
             }
+        }else{
+            return false;
         }
     }
 
