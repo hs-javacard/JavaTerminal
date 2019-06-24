@@ -41,6 +41,9 @@ public class Protocol  implements ISO7816{
     byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     static private final byte INIT_CLA = (byte) 0xd0;
+    static private final byte CHANGEPIN_CLA = (byte) 0xd1;
+    static private final byte WITHDR_CLA = (byte) 0xd3;
+    static private final byte SOFTLIM_CLA = (byte) 0xd2;
     static private final byte DEPOSIT_CLA = (byte) 0xd4;
 
     public Protocol(CardThread ct, Logger logger){
@@ -88,6 +91,8 @@ public class Protocol  implements ISO7816{
         short pin = getNewPin();
         log.SavePin(card_number, pin);
 
+        System.out.println("[TERMINAL]: Card number = " + card_number + ", pin = " + pin);
+
         //Place the information in the buffer
         byte[] plain_text = new byte[10];
         Util.setShort(plain_text, (short) 0, card_number);
@@ -131,7 +136,7 @@ public class Protocol  implements ISO7816{
             short card_nonce = Util.getShort(plain_response, (short) (1));
             short status_code = (short) plain_response[3];
 
-            if(status_code == -1){
+            if(status_code == -1 || !Verify_Nonce(card_nonce)){
                 return false;
             }
 
@@ -147,12 +152,12 @@ public class Protocol  implements ISO7816{
 
     //Withdrawal protocol
     public boolean withdrawal(int payment){
-        nonce = generateNonce();
+//        nonce = generateNonce();
         System.out.println("[TERMINAL]: Payment = " + payment);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
         //Generate & share symmetrical key
-        if(Share_Sym_Key((byte) 2)){
+        if(Share_Sym_Key(WITHDR_CLA)){
             System.out.println("-------------------- PHASE 3: T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
 
             short day_nr = 69;
@@ -164,7 +169,7 @@ public class Protocol  implements ISO7816{
 
             //Encrypt nonce + payment amount + current day number
             byte[] cipher3 = encrypt(theKey, msg, (short) msg.length);
-            ResponseAPDU response3 = comm.sendData((byte) 2, (byte) 2, (byte) 0, (byte) 0,msg,(byte) 0);
+            ResponseAPDU response3 = comm.sendData((byte) WITHDR_CLA, (byte) 2, (byte) 0, (byte) 0,msg,(byte) 0);
 
             //Get nonce and status code
             short received_nonce = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA));
@@ -188,7 +193,7 @@ public class Protocol  implements ISO7816{
 
     //Deposit protocol
     public void deposit(int deposit){
-        nonce = generateNonce();
+//        nonce = generateNonce();
         System.out.println("[TERMINAL]: Deposit = " + deposit);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
@@ -201,7 +206,18 @@ public class Protocol  implements ISO7816{
             //Encrypt deposit amount
             byte[] cipher3 = encrypt(theKey, msg, (short) msg.length);
             //Send data
-            ResponseAPDU response3 = comm.sendData((byte) 3, (byte) 2, (byte) 0, (byte) 0, cipher3, (byte) 0);
+            ResponseAPDU response3 = comm.sendData(DEPOSIT_CLA, (byte) 2, (byte) 0, (byte) 0, cipher3, (byte) 0);
+
+            // The
+
+            byte[] dec = decrypt(response3.getData());
+            dec = RSA_decrypt(public_key_card, dec, (short) 128);
+            byte claC = dec[0];
+            short nonce = Util.getShort(dec, (short) 1);
+            short newBal = Util.getShort(dec, (short) 3);
+            // TODO LOG at 5
+            System.out.println("[TERMINAL] New Balance = "+ newBal);
+
                 /*
                 short balance_new = Util.getShort(response3.getBytes(), (short)(OFFSET_CDATA));
                 System.out.print("[TERMINAL] new card balance = " + balance_new);
@@ -212,7 +228,7 @@ public class Protocol  implements ISO7816{
 
     //Change soft limit protocol
     public void change_soft_limit(int soft_limit){
-        nonce = generateNonce();
+//        nonce = generateNonce();
         System.out.println("[TERMINAL] New Soft Limit = " + soft_limit);
         byte[] plain_text = new byte[4];
         Util.setShort(plain_text, (short) 0, nonce);
@@ -221,32 +237,45 @@ public class Protocol  implements ISO7816{
         //Encrypt nonce + new soft limit
         byte[] cipher = encrypt(theKey, plain_text, (short) plain_text.length);
         //Send encrypted data
-        ResponseAPDU response = comm.sendData((byte) 1, (byte) 3, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
+        ResponseAPDU response = comm.sendData( SOFTLIM_CLA, (byte) 3, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
+
+        // Unpack encrypted data
+        byte[] afterAES = decrypt(response.getData());
+
+        byte[] afterRSA = RSA_decrypt(public_key_card, afterAES, (short) 8);
+
+
+
         //Get status code
-        short status_code = Util.getShort(response.getBytes(), (short) OFFSET_CDATA);
+        byte status_code = afterRSA[3];
+//        short status_code = Util.getShort(response.getBytes(), (short) 0);
         //Check status code
         if(check_status(status_code)){
             System.out.print("[TERMINAL] Change Soft Limit Success!!!");
+        } else {
+            System.out.print("[TERMINAL] Change Soft Limit Failed!!!");
         }
         //TODO: Save signed message to logs
     }
 
     //Change pin protocol
     public void change_pin(int pin){
-        nonce = generateNonce();
+//        nonce = generateNonce();
         System.out.println("[TERMINAL]: New PIN = " + pin);
 
         byte[] plain_text = new byte[6];
-        plain_text[0] = (byte) (nonce >> 8);
-        plain_text[1] = (byte) (nonce >> 0);
-        plain_text[2] = (byte) (pin >> 24);
-        plain_text[3] = (byte) (pin >> 16);
-        plain_text[4] = (byte) (pin >> 8);
-        plain_text[5] = (byte) (pin >> 0);
+        Util.setShort(plain_text, (short) 0, nonce);
+//        plain_text[0] = (byte) (nonce >> 8);
+//        plain_text[1] = (byte) (nonce >> 0);
+        Util.setShort(plain_text, (short) 2, (short) pin);
+//        plain_text[2] = (byte) (pin >> 24);
+//        plain_text[3] = (byte) (pin >> 16);
+//        plain_text[4] = (byte) (pin >> 8);
+//        plain_text[5] = (byte) (pin >> 0);
 
         byte[] cipher = encrypt(theKey,plain_text,(short) plain_text.length);
         //Send nonce + pin
-        ResponseAPDU response = comm.sendData((byte) 0, (byte) 2, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
+        ResponseAPDU response = comm.sendData(CHANGEPIN_CLA, (byte) 3, (byte) 0, (byte) cipher.length,cipher,(byte) 0);
     }
 
     //Check pin
@@ -303,7 +332,7 @@ public class Protocol  implements ISO7816{
     }
 
     //RSA encryption
-    public byte[] RSA_encrypt(RSAPublicKey public_key, byte[] plain_text){
+    public byte[] RSA_encrypt(Key public_key, byte[] plain_text){
         byte[] cipher = new byte[128];
         short length = (short) plain_text.length;
         byte[] temp_array = new byte[plain_text.length];// + 2];
@@ -318,12 +347,12 @@ public class Protocol  implements ISO7816{
     }
 
     //RSA decryption
-    public byte[] RSA_decrypt(RSAPrivateKey private_key, byte[] cipher, short ctlength){
+    public byte[] RSA_decrypt(Key private_key, byte[] cipher, short ctlength){
         byte[] plain_text = new byte[128];
         Cipher rsaCipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1,false);
         rsaCipher.init(private_key, Cipher.MODE_DECRYPT);
 //        short cpl = (short) cipher.length;
-        rsaCipher.doFinal(cipher, (short) 0, ctlength, plain_text, (short) 0);
+        rsaCipher.doFinal(cipher, (short) 0, (short) 128, plain_text, (short) 0);
         short length = Util.getShort(plain_text, (short) 0);
 //        byte[] result = new byte[length];
 //        Util.arrayCopy(plain_text, (short) 2, result, (short) 0 , length);
@@ -471,11 +500,11 @@ public class Protocol  implements ISO7816{
 
         //Retrieve the nonce and card number
         byte cla_counter = plain[0];
-        short card_nonce = Util.getShort(plain, (short) 1);
-        short card_number = Util.getShort(plain, (short) 3);
+//        short card_nonce = Util.getShort(plain, (short) 1);
+        short card_number = Util.getShort(plain, (short) 1);
 
         //Verify the nonce and card number
-        if(Verify_Nonce(card_nonce) && Verify_Card_Number(card_number)){
+        if(Verify_Card_Number(card_number)){
             System.out.println("-------------------- PHASE 2: T → C: (nT ++ symkTC)pkC --------------------");
 
             System.out.print("[TERMINAL]: ");
@@ -540,7 +569,7 @@ public class Protocol  implements ISO7816{
 
     public short getNewPin(){
         //TODO: generate new pin
-        return 0606;
+        return 0; //606;
     }
     public void printBytes(byte[] buffer){
         System.out.println(byteArrayToHex(buffer));
@@ -549,9 +578,9 @@ public class Protocol  implements ISO7816{
     public short generateNonce(){
         old_nonce = nonce;
         short new_nonce = old_nonce;
+        RandomData r = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+        byte[] buff = new byte[2];
         while(old_nonce == new_nonce){
-            RandomData r = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
-            byte[] buff = new byte[2];
             r.generateData(buff, (short) 0, (short) buff.length);
             new_nonce = Util.getShort(buff, (short) 0);
         }

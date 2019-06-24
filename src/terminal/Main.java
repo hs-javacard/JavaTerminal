@@ -98,7 +98,7 @@ public class Main {
     }
 
     public static void switchToPT(){
-        frame.setSize(300,280);
+        frame.setSize(320,320);
         PaymentTerminal panel = new PaymentTerminal(frame, ct, logger);
         c.removeAll();
         c.repaint();
@@ -186,7 +186,10 @@ class CardThread extends Thread {
 //                                    setEnabled(true);
 
                                     // Wait for the card to be removed
-                                    while (c.isCardPresent()){}
+                                    while (c.isCardPresent()){
+                                        sleep(100);
+
+                                    }
 //                                    setEnabled(false);
 //                                        setText(MSG_DISABLED);
                                     break;

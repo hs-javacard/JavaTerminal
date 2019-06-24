@@ -79,21 +79,21 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         p.setPreferredSize(new Dimension(500,330));
 
         JLabel ibanL = new JLabel("Balance: ");
-        balanceTF = new JTextField("0");
+        balanceTF = new JTextField("1000");
         ibanL.setLabelFor(balanceTF);
         balanceTF.setPreferredSize(dField);
         p.add(ibanL);
         p.add(balanceTF);
 
         JLabel softLimitL = new JLabel("Soft Limit: ");
-        softLimitTF = new JTextField("0");
+        softLimitTF = new JTextField("500");
         softLimitL.setLabelFor(softLimitTF);
         softLimitTF.setPreferredSize(dField);
         p.add(softLimitL);
         p.add(softLimitTF);
 
         JLabel hardLimitL = new JLabel("Hard Limit: ");
-        hardLimitTF = new JTextField("0");
+        hardLimitTF = new JTextField("4500");
         hardLimitL.setLabelFor(hardLimitTF);
         hardLimitTF.setPreferredSize(dField);
         p.add(hardLimitL);
@@ -144,9 +144,9 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
     }
 
     public void resetTextFields(){
-        balanceTF.setText("0");
-        softLimitTF.setText("0");
-        hardLimitTF.setText("0");
+        balanceTF.setText("1000");
+        softLimitTF.setText("500");
+        hardLimitTF.setText("4500");
 
         balanceTF.setEditable(true);
         softLimitTF.setEditable(true);

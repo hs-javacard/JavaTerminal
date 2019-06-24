@@ -66,7 +66,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
     }
 
     public void menuToCHANGE_PIN(){
-        firstDisplayString = "Input PIN: ";
+        firstDisplayString = "Input new PIN: ";
         secondDisplayString = "";
         thirdDisplayString = "";
         fourthDisplayString = "";
@@ -98,16 +98,30 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                                     System.out.println("User PIN input: " + Integer.toString(pin));
                                     switch (prev_status){
                                         case CHANGE_PIN:
-                                            //protocol.authentication((byte) 0xd1, (short) pin);
+                                            System.out.println("CHANGE_PIN");
+                                            boolean successp = protocol.authentication((byte) 0xd1, (short) pin);
+                                            if (successp) {
+                                                protocol.change_pin(newPin);
+                                            } else {
+                                                System.out.println("Authentication failed!");
+                                            }
+
                                             menuToSTART();
                                             break;
                                         case SOFT_LIMIT:
-                                            //protocol.authentication((byte) 0xd2, (short) pin);
+                                            boolean success = protocol.authentication((byte) 0xd2, (short) pin);
+                                            if (success){
+                                                protocol.change_soft_limit(limit);
+                                            } else {
+                                                System.out.println("Authentication failed!");
+                                            }
+
                                             menuToSTART();
                                             break;
                                         case BALANCE:
                                             //protocol.authentication((byte) 0xd4, (short) pin);
-                                            menuToSTART();
+//                                            protocol.deposit(balance);
+//                                            menuToSTART();
                                             break;
                                         default:
                                             break;
@@ -132,7 +146,9 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                                     balance = Integer.parseInt(secondDisplayString);
                                     System.out.println("User Balance input: " + Integer.toString(balance));
 
-                                    menuToPIN();
+                                    protocol.deposit(balance);
+                                    menuToSTART();
+                                    //menuToPIN();
                                     break;
                                 case SOFT_LIMIT:
                                     limit = Integer.parseInt(secondDisplayString);

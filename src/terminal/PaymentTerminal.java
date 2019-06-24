@@ -66,14 +66,22 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                                     firstDisplayString = "";
                                     secondDisplayString = "";
                                     thirdDisplayString = "";
-                                /*
-                                if(protocol.authentication((byte) 0xd0,(short) pin)){
-                                    if(protocol.withdrawal(amountToBePaid)){
-                                        status = STATUS.HasPaid;
-                                    }
-                                }else{
-                                    status = STATUS.ERROR;
-                                }*/
+
+
+
+//                                    if(protocol.authentication((byte) 0xd0,(short) pin)){
+//                                        if(protocol.withdrawal(amountToBePaid)){
+//                                            status = STATUS.HasPaid;
+//                                            firstDisplayString = "Transaction Complete";
+//                                            secondDisplayString = "Press OK to repeat";
+//                                            thirdDisplayString = "";
+//                                        } else {
+//
+//                                        }
+//                                    }else{
+//                                        status = STATUS.ERROR;
+//                                        throw new Exception("Not enough balance");
+//                                    }
 
                                     if(true){
                                         if(true){
