@@ -4,11 +4,14 @@ import javacard.framework.*;
 import javacard.security.*;
 import javacardx.crypto.Cipher;
 
+import org.bouncycastle.crypto.prng.DigestRandomGenerator;
+
 import javax.smartcardio.CardException;
 import javax.smartcardio.ResponseAPDU;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static terminal.Communication.byteArrayToHex;
 
@@ -19,7 +22,8 @@ public class Protocol  implements ISO7816{
     private short cardNumber;
     private short cardState;
     private short pin;
-    private short nonce = 4;
+    private short nonce = 0;
+    private short old_nonce = 0;
 
     Communication comm;
     private RSAPublicKey public_key_terminal;
@@ -112,6 +116,7 @@ public class Protocol  implements ISO7816{
 
     //Authentication protocol
     public boolean authentication(byte cla, short pin){
+        nonce = generateNonce();
         if(Share_Sym_Key(cla)){
 
             byte[] plain_text = new byte[4];
@@ -142,7 +147,7 @@ public class Protocol  implements ISO7816{
 
     //Withdrawal protocol
     public boolean withdrawal(int payment){
-
+        nonce = generateNonce();
         System.out.println("[TERMINAL]: Payment = " + payment);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
@@ -183,7 +188,7 @@ public class Protocol  implements ISO7816{
 
     //Deposit protocol
     public void deposit(int deposit){
-
+        nonce = generateNonce();
         System.out.println("[TERMINAL]: Deposit = " + deposit);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
@@ -207,6 +212,7 @@ public class Protocol  implements ISO7816{
 
     //Change soft limit protocol
     public void change_soft_limit(int soft_limit){
+        nonce = generateNonce();
         System.out.println("[TERMINAL] New Soft Limit = " + soft_limit);
         byte[] plain_text = new byte[4];
         Util.setShort(plain_text, (short) 0, nonce);
@@ -227,6 +233,7 @@ public class Protocol  implements ISO7816{
 
     //Change pin protocol
     public void change_pin(int pin){
+        nonce = generateNonce();
         System.out.println("[TERMINAL]: New PIN = " + pin);
 
         byte[] plain_text = new byte[6];
@@ -537,6 +544,18 @@ public class Protocol  implements ISO7816{
     }
     public void printBytes(byte[] buffer){
         System.out.println(byteArrayToHex(buffer));
+    }
+
+    public short generateNonce(){
+        old_nonce = nonce;
+        short new_nonce = old_nonce;
+        while(old_nonce == new_nonce){
+            RandomData r = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+            byte[] buff = new byte[2];
+            r.generateData(buff, (short) 0, (short) buff.length);
+            new_nonce = Util.getShort(buff, (short) 0);
+        }
+        return new_nonce;
     }
 
 }
