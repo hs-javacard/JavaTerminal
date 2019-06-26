@@ -92,7 +92,7 @@ public class Protocol  implements ISO7816{
 
 
         short pin = getNewPin();
-        log.SavePin(card_number, pin);
+//        log.SavePin(card_number, pin);
 
         System.out.println("[TERMINAL]: Card number = " + card_number + ", pin = " + pin);
 
@@ -123,9 +123,13 @@ public class Protocol  implements ISO7816{
         public_key_card.setExponent(exp, (short) 0, exp_size);
         public_key_card.setModulus(mod, (short) 0, mod_size);
 
-        log.SaveExp(card_number, exp);
-        log.SaveMod(card_number, mod);
-        log.SaveSec(card_number, secret);
+        // TODO
+//        log.SaveExp(card_number, exp);
+//        log.SaveMod(card_number, mod);
+//        log.SaveSec(card_number, secret);
+//        bank.setCardInfo();
+        bank.setCardInfo(card_number, exp, mod, secret);
+
     }
 
     public boolean checkPin(byte cla, short pin, byte ins) {
@@ -147,7 +151,10 @@ public class Protocol  implements ISO7816{
         short card_nonce = Util.getShort(plain_response, (short) (1));
         short status_code = (short) plain_response[3];
 
-        if(status_code == -1 || !Verify_Nonce(card_nonce)){
+        if(status_code != 0 || !Verify_Nonce(card_nonce)){
+            if (status_code == -2) { // lock the card
+                bank.updateStateCard(cardNumber, new byte[]{1});
+            }
             return false;
         }
         return true;
@@ -358,57 +365,57 @@ public class Protocol  implements ISO7816{
     }
 
     //Check pin
-    private boolean checkPin(APDU apdu) {
-        return true;
-    }
+//    private boolean checkPin(APDU apdu) {
+//        return true;
+//    }
+//
+//    //Generate pin
+//    private void requestPIN(APDU apdu) {
+//        pin = Util.getShort(apdu.getBuffer(), (short) 1);
+//
+//
+//    }
 
-    //Generate pin
-    private void requestPIN(APDU apdu) {
-        pin = Util.getShort(apdu.getBuffer(), (short) 1);
+//    //Generate card number
+//    private short requestCardNumber(APDU apdu) {
+//        byte[] buffer = apdu.getBuffer();
+//        cardNumber = Util.getShort(buffer, (short) 1);
+//
+//        //TODO Terminal search for CN and related BAN in bank system
+//        // to combine it to find ID of the card, and records
+//        // request by the card in the logs.
+//
+//        if(verifyCardStatus(apdu, cardNumber)){
+//            return cardNumber;
+//        }
+//        else {
+//            ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
+//        }
+//
+//        return 0;
+//    }
 
-
-    }
-
-    //Generate card number
-    private short requestCardNumber(APDU apdu) {
-        byte[] buffer = apdu.getBuffer();
-        cardNumber = Util.getShort(buffer, (short) 1);
-
-        //TODO Terminal search for CN and related BAN in bank system
-        // to combine it to find ID of the card, and records
-        // request by the card in the logs.
-
-        if(verifyCardStatus(apdu, cardNumber)){
-            return cardNumber;
-        }
-        else {
-            ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
-        }
-
-        return 0;
-    }
-
-    //Verify the status of the card in the server of the bank
-    private boolean verifyCardStatus(APDU apdu, short cardNumber) {
-        //TODO Terminal verifies if the card is not in
-        // ‘Locked’ state (Blacklisted or Blocked)
-        byte[] buffer = apdu.getBuffer();
-        cardState = 0;
-
-        if(cardNumber == 0) {
-            cardState = Util.getShort(buffer, (short) 1);
-
-            if (cardState == Short.parseShort("ready")) {
-                //TODO Continue communication
-                return true;
-            } else {
-                //TODO Abort communication, show abort message on terminal screen.
-                // Terminal logs attempt of locked card.
-                return false;
-            }
-        }
-        return false;
-    }
+//    //Verify the status of the card in the server of the bank
+//    private boolean verifyCardStatus(APDU apdu, short cardNumber) {
+//        //TODO Terminal verifies if the card is not in
+//        // ‘Locked’ state (Blacklisted or Blocked)
+//        byte[] buffer = apdu.getBuffer();
+//        cardState = 0;
+//
+//        if(cardNumber == 0) {
+//            cardState = Util.getShort(buffer, (short) 1);
+//
+//            if (cardState == Short.parseShort("ready")) {
+//                //TODO Continue communication
+//                return true;
+//            } else {
+//                //TODO Abort communication, show abort message on terminal screen.
+//                // Terminal logs attempt of locked card.
+//                return false;
+//            }
+//        }
+//        return false;
+//    }
 
     //RSA encryption
     public byte[] RSA_encrypt(Key public_key, byte[] plain_text){
@@ -519,15 +526,15 @@ public class Protocol  implements ISO7816{
     }
     */
 
-    //Check card number
-    public boolean Verify_Card_Number(int cn){
-        if(cn == 9){
-            return true;
-        }else{
-            System.out.print("[TERMINAL] ERROR: Card Number does not match");
-            return false;
-        }
-    }
+//    //Check card number
+//    public boolean Verify_Card_Number(int cn){
+//        if(cn == 9){
+//            return true;
+//        }else{
+//            System.out.print("[TERMINAL] ERROR: Card Number does not match");
+//            return false;
+//        }
+//    }
 
     //Check nonce
     public boolean Verify_Nonce(int n){
@@ -552,12 +559,15 @@ public class Protocol  implements ISO7816{
 
         short card_number = Util.getShort(response.getData(), (short) 128);
         // Get the public key of the card
-        byte[] exp = log.getExp(card_number);
-        byte[] mod = log.getMod(card_number);
+        byte[] exp = bank.getCardInfo(card_number).get(0); // exp
+        byte[] mod = bank.getCardInfo(card_number).get(1); // mod
+//        byte[] exp = log.getExp(card_number);
+//        byte[] mod = log.getMod(card_number);
 
         public_key_card = (RSAPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
         public_key_card.setExponent(exp,(short) 0, (short) exp.length);
         public_key_card.setModulus(mod,(short)0, (short) mod.length);
+
 
 
         byte[] plain_cn = RSA_decrypt(public_key_card, response.getData(), (short) 128);
@@ -570,6 +580,13 @@ public class Protocol  implements ISO7816{
             return false;
         }
         // TODO check card number
+
+        byte[] status = bank.getCardInfo(card_number).get(2);
+        if (status[0] == 1) {
+            System.out.println("Card is locked");
+            return false;
+        }
+        cardNumber = card_number;
 
 
         System.out.println("-------------------- PHASE 1: T → C: (nT ++ symTC ++ secC ++ pkT)pkC --------------------");
@@ -584,7 +601,9 @@ public class Protocol  implements ISO7816{
 
         Util.arrayCopy(theKey, (short) 0, plain_text,(short) 2, (short) 16);
 
-        byte[] secret = log.getSec(card_number);
+
+        byte[] secret = bank.getCardInfo(card_number).get(3);
+//        byte[] secret = log.getSec(card_number);
         Util.arrayCopy(secret, (short) 0, plain_text, (short) 18, (short) 16);
 
         byte[] cipher = RSA_encrypt(public_key_card, plain_text);
@@ -684,14 +703,12 @@ public class Protocol  implements ISO7816{
         return  result;
     }
 
-    public short getNewCardNumber(){
-        //TODO: generate new card number
-        return 9;
-    }
 
     public short getNewPin(){
-        //TODO: generate new pin
-        return 0; //606;
+        byte[] d = new byte[2];
+        random.generateData(d, (short) 0, (short) 2);
+
+        return Util.getShort(d, (short) 0); //random.generateData(); 0; //606;
     }
     public void printBytes(byte[] buffer){
         System.out.println(byteArrayToHex(buffer));

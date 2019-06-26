@@ -51,7 +51,7 @@ public class Bank {
      *          SEC: Card Secret
      */
     public void setCardInfo(short cn, byte[] exp, byte[] mod, byte[] sec) {
-        byte[] state = new byte[1];// TODO set card state to ready
+        byte[] state = new byte[1];// TODO set card state to ready, we for now assume this 0 means unlocked
         short linkedBan = getBan(cn);
 
         if (cardList.containsKey(cn) && banValue.containsKey(linkedBan)) {
