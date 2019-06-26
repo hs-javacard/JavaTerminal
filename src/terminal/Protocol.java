@@ -184,7 +184,7 @@ public class Protocol  implements ISO7816{
 
         //Generate & share symmetrical key
         if(Share_Sym_Key(WITHDR_CLA)){
-            System.out.println("-------------------- PHASE 3: T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
+            System.out.println("-------------------- T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
 
             short day = (short) cal.get(Calendar.DAY_OF_YEAR);
             short year = (short) cal.get(Calendar.YEAR);
@@ -222,7 +222,7 @@ public class Protocol  implements ISO7816{
 
         //Generate & share the symmetrical key
         if(Share_Sym_Key(DEPOSIT_CLA)) {
-            System.out.println("-------------------- PHASE 2: T → C: (nT ++ “Deposit” ++ “amount”)symTC --------------------");
+            System.out.println("-------------------- T → C: (nT ++ “Deposit” ++ “amount”)symTC --------------------");
             byte[] msg = new byte[4];
             Util.setShort(msg, (short) 0, nonce);
             Util.setShort(msg, (short) 2, (short) deposit);
@@ -234,7 +234,13 @@ public class Protocol  implements ISO7816{
             byte[] dec = decrypt(response3.getData());
             dec = RSA_decrypt(public_key_card, dec, (short) 128);
             byte claC = dec[0];
+            if (claC != DEPOSIT_CLA ){
+                System.out.println("CLA changed during protocol");
+            }
             short nonce = Util.getShort(dec, (short) 1);
+            if (nonce != this.nonce) {
+                System.out.println("Nonce changed during protocol");
+            }
             short newBal = Util.getShort(dec, (short) 3);
 
             System.out.println("[TERMINAL] New Balance = "+ newBal);
@@ -423,7 +429,7 @@ public class Protocol  implements ISO7816{
 
 
 
-        System.out.println("-------------------- PHASE 1: T → C: (nT ++ symTC ++ secC [missing! ++ pkT] )pkC --------------------");
+        System.out.println("--------------------  T → C: (nT ++ symTC ++ secC [missing! ++ pkT] )pkC --------------------");
         byte[] temp = new byte[255];
         //Get the exponent and modulus of the terminal key.
         short exponent_size = public_key_terminal.getExponent(temp, (short) 0);
