@@ -16,6 +16,7 @@ import static terminal.Communication.byteArrayToHex;
 public class Protocol  implements ISO7816{
 
     Logger log;
+    Bank bank;
 
     private short cardNumber;
     private short cardState;
@@ -44,9 +45,10 @@ public class Protocol  implements ISO7816{
     static private final byte SOFTLIM_CLA = (byte) 0xd2;
     static private final byte DEPOSIT_CLA = (byte) 0xd4;
 
-    public Protocol(CardThread ct, Logger logger){
+    public Protocol(CardThread ct, Logger logger, Bank bank){
         comm = new Communication(ct);
         log = logger; //new Logger();
+        this.bank = bank;
     }
 
     public void init(){
@@ -85,7 +87,10 @@ public class Protocol  implements ISO7816{
                 ", Hard Limit = " + hard_limit);
 
         //Generate and log a new card number and pin
-        short card_number = getNewCardNumber();
+//        short card_number = getNewCardNumber();
+        short card_number = bank.generateCardNumber();
+
+
         short pin = getNewPin();
         log.SavePin(card_number, pin);
 

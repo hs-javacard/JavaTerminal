@@ -13,8 +13,8 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
 
     private Protocol protocol;
 
-    public InitializationTerminal(JFrame parent, CardThread ct, Logger logger){
-        this.protocol = new Protocol(ct, logger);
+    public InitializationTerminal(JFrame parent, CardThread ct, Logger logger, Bank bank){
+        this.protocol = new Protocol(ct, logger, bank);
         this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);

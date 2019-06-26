@@ -46,6 +46,7 @@ public class Main {
     static Container c = frame.getContentPane();
     static CardThread ct;
     static Logger logger;
+    static Bank bank;
 
     public static void main(String[] args){
 // deposit, reloadterminal
@@ -53,10 +54,11 @@ public class Main {
         ct = new CardThread();
         ct.start();
         logger = new Logger();
+        bank = new Bank();
 
 
 
-        ReloadTerminal panel = new ReloadTerminal(frame, ct, logger);
+        ReloadTerminal panel = new ReloadTerminal(frame, ct, logger, bank);
 
         //PaymentTerminal panel = new PaymentTerminal(frame);
 
@@ -99,7 +101,7 @@ public class Main {
 
     public static void switchToPT(){
         frame.setSize(320,320);
-        PaymentTerminal panel = new PaymentTerminal(frame, ct, logger);
+        PaymentTerminal panel = new PaymentTerminal(frame, ct, logger, bank);
         c.removeAll();
         c.repaint();
         c.revalidate();
@@ -110,7 +112,7 @@ public class Main {
 
     public static void switchToRT(){
         frame.setSize(300,320);
-        ReloadTerminal panel = new ReloadTerminal(frame, ct, logger);
+        ReloadTerminal panel = new ReloadTerminal(frame, ct, logger, bank);
         c.removeAll();
         c.repaint();
         c.revalidate();
@@ -121,7 +123,7 @@ public class Main {
 
     public static void switchToIT(){
         frame.setSize(550,450);
-        InitializationTerminal panel = new InitializationTerminal(frame, ct, logger);
+        InitializationTerminal panel = new InitializationTerminal(frame, ct, logger, bank);
         c.removeAll();
         c.repaint();
         c.revalidate();

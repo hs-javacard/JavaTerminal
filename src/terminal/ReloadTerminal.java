@@ -17,8 +17,8 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
 
     private Protocol protocol;
 
-    public ReloadTerminal(JFrame parent, CardThread ct, Logger logger){
-        this.protocol = new Protocol(ct, logger);
+    public ReloadTerminal(JFrame parent, CardThread ct, Logger logger, Bank bank){
+        this.protocol = new Protocol(ct, logger, bank);
         this.protocol.init();
         buildGUI(parent);
         parent.setTitle(TITLE);
