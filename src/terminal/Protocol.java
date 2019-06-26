@@ -18,25 +18,22 @@ public class Protocol  implements ISO7816{
     Bank bank;
 
     private short cardNumber;
-    private short cardState;
-    private short pin;
     private short nonce = 0;
     private short old_nonce = 0;
 
     Communication comm;
     private RSAPublicKey public_key_terminal;
-    private RSAPrivateKey private_key_terminal;
     private RSAPublicKey public_key_card;
 
-    RandomData random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
-    byte[] theKey = {};
+    private RandomData random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+    private byte[] theKey = {};
     private AESKey sharedKey = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128,
             false);
-    Cipher aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+    private Cipher aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
 
-    private byte[] decryptArray;
-    private byte[] aesWorkspace;
-    byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    Calendar cal = Calendar.getInstance();
 
     static private final byte INIT_CLA = (byte) 0xd0;
     static private final byte CHANGEPIN_CLA = (byte) 0xd1;
@@ -46,7 +43,7 @@ public class Protocol  implements ISO7816{
 
     public Protocol(CardThread ct, Logger logger, Bank bank){
         comm = new Communication(ct);
-        log = logger; //new Logger();
+        log = logger;
         this.bank = bank;
     }
 
@@ -59,7 +56,6 @@ public class Protocol  implements ISO7816{
         keyPair.genKeyPair();
 
         public_key_terminal = (RSAPublicKey) keyPair.getPublic();
-        private_key_terminal = (RSAPrivateKey) keyPair.getPrivate();
 
     }
 
@@ -89,7 +85,7 @@ public class Protocol  implements ISO7816{
         ResponseAPDU response = comm.sendData(INIT_CLA, (byte) 0, (byte) 0, (byte) 0, plain_text,(byte) 0);
 
         //Retrieve the exponent and modulus of the card public key
-        byte claCounter = response.getBytes()[0];
+        byte claCounter = response.getBytes()[0]; // just ignore the cla since this is initialization and the environment is trusted anyways
         short exp_size = Util.getShort(response.getBytes(), (short)(1));
         short mod_size = Util.getShort(response.getBytes(), (short)(3));
         byte[] exp = new byte[exp_size];
@@ -181,10 +177,6 @@ public class Protocol  implements ISO7816{
         }
     }
 
-    private void sendResponse(APDU apdu, short length) {
-        apdu.setOutgoingAndSend((short) 0, length);
-    }
-
     //Withdrawal protocol
     public int withdrawal_checklimits(int payment){
         System.out.println("[TERMINAL]: Payment = " + payment);
@@ -194,7 +186,6 @@ public class Protocol  implements ISO7816{
         if(Share_Sym_Key(WITHDR_CLA)){
             System.out.println("-------------------- PHASE 3: T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
 
-            Calendar cal = Calendar.getInstance();
             short day = (short) cal.get(Calendar.DAY_OF_YEAR);
             short year = (short) cal.get(Calendar.YEAR);
             byte[] msg = new byte[8];
@@ -230,8 +221,8 @@ public class Protocol  implements ISO7816{
         log.logRequest(cardNumber, Logger.NEWREQUEST, "Deposit");
 
         //Generate & share the symmetrical key
-        if(Share_Sym_Key((byte) DEPOSIT_CLA)) {
-            System.out.println("-------------------- PHASE 3: T → C: (nT ++ “Deposit” ++ “amount”)symTC --------------------");
+        if(Share_Sym_Key(DEPOSIT_CLA)) {
+            System.out.println("-------------------- PHASE 2: T → C: (nT ++ “Deposit” ++ “amount”)symTC --------------------");
             byte[] msg = new byte[4];
             Util.setShort(msg, (short) 0, nonce);
             Util.setShort(msg, (short) 2, (short) deposit);
@@ -389,8 +380,9 @@ public class Protocol  implements ISO7816{
         }
     }
 
-    /*Multiple protocols start with sharing the public key of the terminal and setting up the symmetric key.
-    This part of the protocol is implemented in this function.*/
+    /* Multiple protocols start with sharing the public key of the terminal and setting up the symmetric key.
+    This part of the protocol is implemented in this function.
+    The function also generates the nonce used during the protocol, as well as the symmetric key that will be used */
     public boolean Share_Sym_Key(byte CLA){
         nonce = generateNonce();
         theKey = generateSymKey();
@@ -430,7 +422,8 @@ public class Protocol  implements ISO7816{
         cardNumber = card_number;
 
 
-        System.out.println("-------------------- PHASE 1: T → C: (nT ++ symTC ++ secC ++ pkT)pkC --------------------");
+
+        System.out.println("-------------------- PHASE 1: T → C: (nT ++ symTC ++ secC [missing! ++ pkT] )pkC --------------------");
         byte[] temp = new byte[255];
         //Get the exponent and modulus of the terminal key.
         short exponent_size = public_key_terminal.getExponent(temp, (short) 0);
@@ -444,7 +437,6 @@ public class Protocol  implements ISO7816{
 
 
         byte[] secret = bank.getCardInfo(card_number).get(3);
-//        byte[] secret = log.getSec(card_number);
         Util.arrayCopy(secret, (short) 0, plain_text, (short) 18, (short) 16);
 
         byte[] cipher = RSA_encrypt(public_key_card, plain_text);
@@ -452,30 +444,35 @@ public class Protocol  implements ISO7816{
         //Send the public key of the terminal
         response = comm.sendData(CLA, (byte) 1, (byte) 0, (byte) 0, cipher,(byte) 0);
 
-        short ln = (short) response.getNr();
-        byte[] res = Arrays.copyOfRange(response.getBytes(), 0, ln);
-
-        short reslen = (short) response.getBytes().length;
-
-
 
         //Decrypt card response
-
         byte[] plain = decrypt(response.getData());
 
-        //byte[] plain = RSA_decrypt(private_key_terminal, res, ln);
         System.out.print("[TERMINAL]: ");
         printBytes(plain);
 
         //Retrieve the nonce and card number
         byte cla_counter = plain[0];
         short nonce = Util.getShort(plain, (short) 1);
-        short status_code = plain[3];
+        short status_code = plain[3]; // does secret match
+        if (cla_counter != CLA) {
+            System.out.println("CLA changed during protocol");
+            return false;
+        }
+        if (nonce != this.nonce){
+            System.out.println("Nonce changed during protocol");
+            return false;
+        }
+        if (status_code != 1){ // Check secret
+            System.out.println("Supplied secret does not match secret on card");
+            return false;
+        }
+
 
         return true;
     }
 
-    /*Check the status code we received from the card*/
+    /* Check the status code we received from the card for withdrawal*/
     public boolean check_status(short status){
         boolean result = false;
         switch (status){
@@ -502,8 +499,7 @@ public class Protocol  implements ISO7816{
     public short getNewPin(){
         byte[] d = new byte[2];
         random.generateData(d, (short) 0, (short) 2);
-
-        return Util.getShort(d, (short) 0); //random.generateData(); 0; //606;
+        return Util.getShort(d, (short) 0);
     }
     public void printBytes(byte[] buffer){
         System.out.println(byteArrayToHex(buffer));

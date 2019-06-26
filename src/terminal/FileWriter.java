@@ -1,6 +1,7 @@
 package terminal;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -18,14 +19,16 @@ public final class FileWriter {
      * @throws IOException when something is wrong with the given path.
      */
     public static File write(String content, String path) throws IOException {
-        File file = new File(path);
+        File file = new File(System.getProperty("user.home") + File.separator + path);
 
-        boolean success = file.createNewFile();
-        if (success)
-            throw new IOException("File could not be created");
-
-        PrintWriter writer = new PrintWriter(file);
-        writer.print(content);
+        if (!file.exists()) {
+            boolean success = file.createNewFile();
+            if (!success)
+                throw new IOException("File could not be created");
+        }
+        PrintWriter writer = new PrintWriter(new FileOutputStream(file, true));
+        writer.append(content);
+        writer.append("\n");
         writer.flush();
         writer.close();
         return file;
