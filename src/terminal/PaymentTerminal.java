@@ -229,6 +229,7 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
             }
         } catch (Exception e) {
             isERROR = true;
+            e.printStackTrace();
             firstDisplayString = MSG_ERROR;
             secondDisplayString = MSG_ERROR;
             thirdDisplayString = "Press STOP to RESET";

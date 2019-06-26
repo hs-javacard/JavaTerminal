@@ -223,6 +223,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         } catch (Exception e) {
             isERROR = true;
             System.out.println(MSG_ERROR);
+            e.printStackTrace();
             System.out.println(e.getMessage());
             firstDisplayString = MSG_ERROR;
             secondDisplayString = MSG_ERROR;

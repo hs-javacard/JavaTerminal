@@ -47,11 +47,13 @@ public class Communication {
 
     public ResponseAPDU sendData(byte cla, byte ins, byte p1, byte p2, byte[] data, byte ne){
         try{
+            System.out.println("CLA: " + cla + " INS: " + ins);
             CommandAPDU apdu = new CommandAPDU(cla, ins, p1, p2, data, ne);
 //            return sim.transmitCommand(apdu);
             return ct.applet.transmit(apdu);
         }catch (Exception e){
             System.out.println("ERROR: sendData()");
+
             return null;
         }
     }

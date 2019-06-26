@@ -29,7 +29,7 @@ public class Protocol  implements ISO7816{
     private RSAPublicKey public_key_card;
 
     RandomData random = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
-    byte[] theKey = {0x2d, 0x2a, 0x2d, 0x42, 0x55, 0x49, 0x4c, 0x44, 0x41, 0x43, 0x4f, 0x44, 0x45, 0x2d, 0x2a, 0x2d};
+    byte[] theKey = {};
     private AESKey sharedKey = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128,
             false);
     Cipher aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
@@ -538,8 +538,12 @@ public class Protocol  implements ISO7816{
     This part of the protocol is implemented in this function.*/
     public boolean Share_Sym_Key(byte CLA){
         nonce = generateNonce();
+        theKey = generateSymKey();
 
         ResponseAPDU response = comm.sendData(CLA, (byte) 0, (byte) 0, (byte) 0, new byte[] {}, (byte) 0);
+
+
+
 
         short card_number = Util.getShort(response.getData(), (short) 128);
         // Get the public key of the card
@@ -604,7 +608,7 @@ public class Protocol  implements ISO7816{
 
         //Decrypt card response
 
-        byte[] plain = decrypt(response.getBytes());
+        byte[] plain = decrypt(response.getData());
 
         //byte[] plain = RSA_decrypt(private_key_terminal, res, ln);
         System.out.print("[TERMINAL]: ");
@@ -691,13 +695,19 @@ public class Protocol  implements ISO7816{
     public short generateNonce(){
         old_nonce = nonce;
         short new_nonce = old_nonce;
-        RandomData r = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
         byte[] buff = new byte[2];
+        random.generateData(buff, (short) 0, (short) buff.length);
         while(old_nonce == new_nonce){
-            r.generateData(buff, (short) 0, (short) buff.length);
+            random.generateData(buff, (short) 0, (short) buff.length);
             new_nonce = Util.getShort(buff, (short) 0);
         }
         return new_nonce;
+    }
+
+    public byte[] generateSymKey(){
+        byte[] key = new byte[16];
+        random.generateData(key, (short) 0, (short) 16);
+        return key;
     }
 
 }
