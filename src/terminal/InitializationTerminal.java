@@ -20,6 +20,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         parent.setTitle(TITLE);
     }
 
+    //Function that gets called when a button is pressed.
     @Override
     public void actionPerformed(ActionEvent ae) {
         try {
@@ -29,30 +30,29 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
                 String str = ((JButton) src).getText();
                 switch (str){
                     case "STOP":
+                        //Stop the initialization terminal and reset to the initial state.
                         isError = false;
                         resetTextFields();
                         break;
                     case "Save":
+                        //Perform the initialization of the java card.
                         if(!isError){
                             int balance = Integer.parseInt(balanceTF.getText());
                             int sl = Integer.parseInt(softLimitTF.getText());
                             int hl = Integer.parseInt(hardLimitTF.getText());
-
-                        /*
-                        System.out.println("Balance: " + Integer.toString(balance));
-                        System.out.println("Soft Limit: " + Integer.toString(sl));
-                        System.out.println("Hard Limit: " + Integer.toString(hl));
-                        */
-                        protocol.initialization((short) balance, (short) sl, (short) hl);
+                            protocol.initialization((short) balance, (short) sl, (short) hl);
                         }
                         break;
                     case "RT":
+                        //Switch to the Reload terminal
                         switchToRT();
                         break;
                     case "PT":
+                        //Switch to the Payment terminal
                         switchToPT();
                         break;
                     case "IT":
+                        //Switch to the Initialization terminal
                         switchToIT();
                         break;
                     default:
@@ -65,15 +65,10 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         }
     }
 
+    //Builds the GUI for the Initialization Terminal
     void buildGUI(JFrame parent) {
         setLayout(new FlowLayout());
-        /*
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        */
+
         Dimension dField = new Dimension(450, 25);
         JPanel p = new JPanel(new FlowLayout(SwingConstants.LEADING, 10, 10));
         p.setPreferredSize(new Dimension(500,330));
@@ -98,7 +93,6 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         hardLimitTF.setPreferredSize(dField);
         p.add(hardLimitL);
         p.add(hardLimitTF);
-
 
         JPanel gp = new JPanel(new GridLayout(1,4));
         JButton buttonPT = new JButton("PT");
@@ -131,6 +125,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         }
     }
 
+    //Set the text field to display the error message
     public void setTextFieldsToERROR(){
         balanceTF.setText(MSG_ERROR + "Press STOP to RESET");
         softLimitTF.setText(MSG_ERROR + "Press STOP to RESET");
@@ -143,6 +138,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
         isError = true;
     }
 
+    //Reset the text fields to display the initial values.
     public void resetTextFields(){
         balanceTF.setText("1000");
         softLimitTF.setText("500");

@@ -25,6 +25,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
 
     }
 
+    //Change the GUI to the PIN state.
     public void menuToPIN(){
         firstDisplayString = "Input PIN: ";
         secondDisplayString = "";
@@ -35,6 +36,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         updateText();
     }
 
+    //Change the GUI to the START state.
     public void menuToSTART(){
         firstDisplayString = "1) Balance";
         secondDisplayString = "2) Soft Limit";
@@ -45,6 +47,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         updateText();
     }
 
+    //Change the GUI to the BALANCE state.
     public void menuToBALANCE(){
         firstDisplayString = "Input Balance: ";
         secondDisplayString = "";
@@ -55,6 +58,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         updateText();
     }
 
+    //Change the GUI to the SOFT LIMIT state.
     public void menuToSOFT_LIMIT(){
         firstDisplayString = "Input Soft Limit: ";
         secondDisplayString = "";
@@ -65,6 +69,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         updateText();
     }
 
+    //Change the GUI to the CHANGE PIN state.
     public void menuToCHANGE_PIN(){
         firstDisplayString = "Input new PIN: ";
         secondDisplayString = "";
@@ -75,6 +80,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         updateText();
     }
 
+    //Function that gets called when a button is pressed.
     @Override
     public void actionPerformed(ActionEvent ae) {
         try {
@@ -82,11 +88,13 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
             if (src instanceof JButton){
                 char c = ((JButton) src).getText().charAt(0);
                 String str = ((JButton) src).getText();
+                //SWitch for a button press.
                 switch (str){
                     case "*":
 //                        protocol.testt();
                         break;
                     case "STOP":
+                        //Reset the terminal to the initial state
                         isERROR = false;
                         menuToSTART();
                         break;
@@ -94,10 +102,12 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                         if(!isERROR){
                             switch (status){
                                 case PIN:
+                                    //User inputted a pin
                                     int pin = Integer.parseInt(secondDisplayString);
                                     System.out.println("User PIN input: " + Integer.toString(pin));
                                     switch (prev_status){
                                         case CHANGE_PIN:
+                                            //Perform the authentication protocol before we do the change pin protocol.
                                             System.out.println("CHANGE_PIN");
                                             boolean successp = protocol.authentication((byte) 0xd1, (short) pin);
                                             if (successp) {
@@ -105,29 +115,26 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                                             } else {
                                                 System.out.println("Authentication failed!");
                                             }
-
+                                            //Return to the START state
                                             menuToSTART();
                                             break;
                                         case SOFT_LIMIT:
+                                            //Perform the authentication protocol before we do the soft limit protocol.
                                             boolean success = protocol.authentication((byte) 0xd2, (short) pin);
                                             if (success){
                                                 protocol.change_soft_limit(limit);
                                             } else {
                                                 System.out.println("Authentication failed!");
                                             }
-
+                                            //Return to the START state
                                             menuToSTART();
-                                            break;
-                                        case BALANCE:
-                                            //protocol.authentication((byte) 0xd4, (short) pin);
-//                                            protocol.deposit(balance);
-//                                            menuToSTART();
                                             break;
                                         default:
                                             break;
                                     }
                                     break;
                                 case MENU:
+                                    //Switch state depending on the user input
                                     switch (fourthDisplayString){
                                         case "1":
                                             menuToBALANCE();
@@ -143,20 +150,23 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                                     }
                                     break;
                                 case BALANCE:
+                                    //Perform the deposit protocol
                                     balance = Integer.parseInt(secondDisplayString);
                                     System.out.println("User Balance input: " + Integer.toString(balance));
 
                                     protocol.deposit(balance);
+                                    //Return to the START state
                                     menuToSTART();
-                                    //menuToPIN();
                                     break;
                                 case SOFT_LIMIT:
+                                    //Save the input of the user and go to the pin state to request a pin code.
                                     limit = Integer.parseInt(secondDisplayString);
                                     System.out.println("User Soft Limit input: " + Integer.toString(limit));
 
                                     menuToPIN();
                                     break;
                                 case CHANGE_PIN:
+                                    //Save the input of the user and go to the pin state to request a pin code.
                                     newPin = Integer.parseInt(secondDisplayString);
                                     System.out.println("User New PIN input: " + Integer.toString(newPin));
 
@@ -166,6 +176,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                         }
                         break;
                     case "CORR":
+                        //Reset the display such that the user can retry to give a correct input.
                         if(!isERROR){
                             switch (status){
                                 case PIN:
@@ -188,15 +199,19 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
                         }
                         break;
                     case "RT":
+                        //Switch to the Reload terminal
                         switchToRT();
                         break;
                     case "PT":
+                        //Switch to the Payment terminal
                         switchToPT();
                         break;
                     case "IT":
+                        //Switch to the Initialization terminal
                         switchToIT();
                         break;
                     default:
+                        //Add button number to the display
                         if(!isERROR){
                             switch (status){
                                 case PIN:
@@ -234,6 +249,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         }
     }
 
+    //Update the display text on the GUI
     void updateText(){
         if(status == STATUS.MENU){
             firstDisplay.setHorizontalAlignment(JTextField.LEFT);
@@ -252,10 +268,9 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         fourthDisplay.setText(fourthDisplayString);
     }
 
+    //Construct the GUI
     void buildGUI(JFrame parent) {
         setLayout(new GridBagLayout());
-
-        //parent.setSize(new Dimension(300, 300));
 
         GridBagConstraints gbc = new GridBagConstraints();
         Dimension d = new Dimension();
@@ -335,6 +350,7 @@ public class ReloadTerminal extends JPanel implements ActionListener, BaseTermin
         parent.addWindowListener(new ReloadTerminal.CloseEventListener());
     }
 
+    //Give correct colours to the keys.
     void key(String txt) {
         if (txt == null) {
             keypad.add(new JLabel());

@@ -22,11 +22,9 @@ import static terminal.Main.*;
 
 public class PaymentTerminal extends JPanel implements ActionListener, BaseTerminal{
 
-    private static short hardLimit;
     private Protocol protocol;
 
     public PaymentTerminal(JFrame parent, CardThread ct, Logger logger, Bank bank){
-        //Only able to pay if hard limit is not reached
         this.protocol = new Protocol(ct, logger, bank);
         this.protocol.init();
         buildGUI(parent);
@@ -34,6 +32,7 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
 
     }
 
+    //Function that gets called when a button is pressed.
     @Override
     public void actionPerformed(ActionEvent ae) {
         try {
@@ -43,6 +42,7 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                 String str = ((JButton) src).getText();
                 switch (str){
                     case "STOP":
+                        //Stop the terminal and reset to the initial state.
                         isERROR = false;
                         firstDisplayString = "To Be Paid:";
                         secondDisplayString = "";
@@ -51,12 +51,14 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                         status = STATUS.ToBePaid;
                         break;
                     case "OK":
+                        //User has placed an input and the terminal can continue.
                         if(!isERROR){
                             switch(status){
+                                //The amount to be payed has been inputted.
                                 case ToBePaid:
                                     int amountToBePaidI = Integer.parseInt(secondDisplayString);
 
-
+                                    //Check if it fits within a short
                                     if (amountToBePaidI > Short.MAX_VALUE || amountToBePaidI < Short.MIN_VALUE) {
                                         firstDisplayString = "Invalid number";
                                         secondDisplayString = "";
@@ -66,7 +68,7 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                                     }
 
                                     amountToBePaid = (short) amountToBePaidI;
-
+                                    //Send the amount to the java card to check if it is within the limits.
                                     int pay_status = protocol.withdrawal_checklimits(amountToBePaid);
                                     switch (pay_status){
                                         case 1:
@@ -80,7 +82,6 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                                             secondDisplayString = "";
                                             thirdDisplayString = "";
                                             status = STATUS.Message;
-
                                             break;
                                         case 0:
                                             // internal error
@@ -111,23 +112,19 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                                             status = STATUS.Message;
                                             break;
                                     }
-
-//                                    status = STATUS.InputPIN;
                                     break;
                                 case InputPIN:
-
-
-//                                    System.out.println("Need pin for amount "+ amountToBePaid + "?");
-////                                    protocol.Share_Sym_Key()
-//
+                                    //The user has inputted a pin code
                                     int pin = Integer.parseInt(thirdDisplayString);
                                     System.out.println("User PIN input: " + Integer.toString(pin));
                                     firstDisplayString = "";
                                     secondDisplayString = "";
                                     thirdDisplayString = "";
+                                    //Send the input pin to the java card to check if it is correct.
                                     boolean pin_ok = protocol.checkPin(WITHDR_CLA,(short) pin, (byte) 3);
                                     System.out.println("Pin check: " + pin_ok);
                                     if(pin_ok) {
+                                        //If the pin is correct perform the rest of the withdraw protocol.
                                         Protocol.WithdrawResult w = protocol.withdraw();
                                         if (w.success) {
                                             firstDisplayString = "New balance: " + w.balance;
@@ -139,51 +136,26 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                                     }
                                     secondDisplayString = "";
                                     thirdDisplayString = "";
-
-//                                    if(protocol.authentication((byte) 0xd0,(short) pin)){
-//                                        if(protocol.withdrawal_checklimits(amountToBePaid)){
-//                                            status = STATUS.HasPaid;
-//                                            firstDisplayString = "Transaction Complete";
-//                                            secondDisplayString = "Press OK to repeat";
-//                                            thirdDisplayString = "";
-//                                        } else {
-//                                            System.out.println("NOT ENOUGH BALANCE");
-//                                            status = STATUS.ERROR;
-//                                            throw new Exception("Not enough balance");
-//                                        }
-//                                    }else{
-//                                        System.out.println("WRONG PIN");
-//                                        status = STATUS.ERROR;
-//                                        throw new Exception("Wrong PIN");
-//                                    }
-
-//                                    if(true){
-//                                        if(true){
-//                                            status = STATUS.HasPaid;
-//                                            firstDisplayString = "Transaction Complete";
-//                                            secondDisplayString = "Press OK to repeat";
-//                                            thirdDisplayString = "";
-//                                        }else{
-//                                            throw new Exception("Not enough balance");
-//                                        }
-//                                    }else{
-//                                        throw new Exception("Wrong PIN");
-//                                    }
                                     break;
                                 case HasPaid:
+                                    //The transaction is complete and the terminal returns to its initial state.
                                     firstDisplayString = "To Be Paid:";
                                     secondDisplayString = "";
                                     thirdDisplayString = "";
                                     status = STATUS.ToBePaid;
                                     break;
                                 case Message:
+                                    //The transaction has not been completed and the terminal returns to its initial
+                                    // state so that the user can try again.
                                     status = STATUS.ToBePaid;
                                     break;
                             }
+                            //Apply text changes to the GUI
                             updateText();
                         }
                         break;
                     case "CORR":
+                        //Reset the display such that the user can retry to give a correct input.
                         if(!isERROR){
                             switch(status){
                                 case ToBePaid:
@@ -201,15 +173,19 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                         }
                         break;
                     case "RT":
+                        //Switch to the Reload terminal
                         switchToRT();
                         break;
                     case "PT":
+                        //Switch to the Payment terminal
                         switchToPT();
                         break;
                     case "IT":
+                        //Switch to the Initialization terminal
                         switchToIT();
                         break;
                     default:
+                        //Add button number to the display
                         if(!isERROR){
                             switch(status){
                                 case ToBePaid:
@@ -239,12 +215,14 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
         }
     }
 
+    //Update the display text on the GUI
     void updateText(){
         firstDisplay.setText(firstDisplayString);
         secondDisplay.setText(secondDisplayString);
         thirdDisplay.setText(thirdDisplayString);
     }
 
+    //Construct the GUI
     void buildGUI(JFrame parent) {
         setLayout(new GridBagLayout());
 
@@ -313,6 +291,7 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
         parent.addWindowListener(new CloseEventListener());
     }
 
+    //Give correct colours to the keys.
     void key(String txt) {
         if (txt == null) {
             keypad.add(new JLabel());
