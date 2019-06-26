@@ -54,52 +54,129 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
                         if(!isERROR){
                             switch(status){
                                 case ToBePaid:
-                                    amountToBePaid = Integer.parseInt(secondDisplayString);
-                                    System.out.println("To Be Paid Amount: " + Integer.toString(amountToBePaid));
-                                    firstDisplayString = "To Be Paid: " + secondDisplayString;
-                                    secondDisplayString = "Input PIN: ";
-                                    status = STATUS.InputPIN;
+                                    int amountToBePaidI = Integer.parseInt(secondDisplayString);
+
+
+                                    if (amountToBePaidI > Short.MAX_VALUE || amountToBePaidI < Short.MIN_VALUE) {
+                                        firstDisplayString = "Invalid number";
+                                        secondDisplayString = "";
+                                        thirdDisplayString = "";
+                                        status = STATUS.Message;
+                                        break;
+                                    }
+
+                                    amountToBePaid = (short) amountToBePaidI;
+
+                                    int pay_status = protocol.withdrawal_checklimits(amountToBePaid);
+                                    switch (pay_status){
+                                        case 1:
+                                            // under soft limit; no pin
+                                            Protocol.WithdrawResult w = protocol.withdraw();
+                                            if (w.success) {
+                                                firstDisplayString = "New balance: " + w.balance;
+                                            } else {
+                                                firstDisplayString = "Error during payment";
+                                            }
+                                            secondDisplayString = "";
+                                            thirdDisplayString = "";
+                                            status = STATUS.Message;
+
+                                            break;
+                                        case 0:
+                                            // internal error
+                                            firstDisplayString = "Internal error";
+                                            secondDisplayString = "";
+                                            thirdDisplayString = "";
+                                            status = STATUS.Message;
+                                            break;
+                                        case -1:
+                                            // insufficient balance
+                                            firstDisplayString = "Insufficient balance";
+                                            secondDisplayString = "";
+                                            thirdDisplayString = "";
+                                            status = STATUS.Message;
+                                            break;
+                                        case -2:
+                                            // over soft limit; ask pin
+                                            System.out.println("To Be Paid Amount: " + Integer.toString(amountToBePaid));
+                                            firstDisplayString = "To Be Paid: " + secondDisplayString;
+                                            secondDisplayString = "Input PIN: ";
+                                            status = STATUS.InputPIN;
+                                            break;
+                                        case -3:
+                                            // hard limit exceeded
+                                            firstDisplayString = "Hard limit exceeded";
+                                            secondDisplayString = "";
+                                            thirdDisplayString = "";
+                                            status = STATUS.Message;
+                                            break;
+                                    }
+
+//                                    status = STATUS.InputPIN;
                                     break;
                                 case InputPIN:
+
+
+//                                    System.out.println("Need pin for amount "+ amountToBePaid + "?");
+////                                    protocol.Share_Sym_Key()
+//
                                     int pin = Integer.parseInt(thirdDisplayString);
                                     System.out.println("User PIN input: " + Integer.toString(pin));
                                     firstDisplayString = "";
                                     secondDisplayString = "";
                                     thirdDisplayString = "";
-
-
+                                    boolean pin_ok = protocol.checkPin(WITHDR_CLA,(short) pin, (byte) 3);
+                                    System.out.println("Pin check: " + pin_ok);
+                                    if(pin_ok) {
+                                        Protocol.WithdrawResult w = protocol.withdraw();
+                                        if (w.success) {
+                                            firstDisplayString = "New balance: " + w.balance;
+                                        } else {
+                                            firstDisplayString = "Error during payment";
+                                        }
+                                    } else {
+                                        firstDisplayString = "Wrong pin";
+                                    }
+                                    secondDisplayString = "";
+                                    thirdDisplayString = "";
 
 //                                    if(protocol.authentication((byte) 0xd0,(short) pin)){
-//                                        if(protocol.withdrawal(amountToBePaid)){
+//                                        if(protocol.withdrawal_checklimits(amountToBePaid)){
 //                                            status = STATUS.HasPaid;
 //                                            firstDisplayString = "Transaction Complete";
 //                                            secondDisplayString = "Press OK to repeat";
 //                                            thirdDisplayString = "";
 //                                        } else {
-//
+//                                            System.out.println("NOT ENOUGH BALANCE");
+//                                            status = STATUS.ERROR;
+//                                            throw new Exception("Not enough balance");
 //                                        }
 //                                    }else{
+//                                        System.out.println("WRONG PIN");
 //                                        status = STATUS.ERROR;
-//                                        throw new Exception("Not enough balance");
+//                                        throw new Exception("Wrong PIN");
 //                                    }
 
-                                    if(true){
-                                        if(true){
-                                            status = STATUS.HasPaid;
-                                            firstDisplayString = "Transaction Complete";
-                                            secondDisplayString = "Press OK to repeat";
-                                            thirdDisplayString = "";
-                                        }else{
-                                            throw new Exception("Not enough balance");
-                                        }
-                                    }else{
-                                        throw new Exception("Wrong PIN");
-                                    }
+//                                    if(true){
+//                                        if(true){
+//                                            status = STATUS.HasPaid;
+//                                            firstDisplayString = "Transaction Complete";
+//                                            secondDisplayString = "Press OK to repeat";
+//                                            thirdDisplayString = "";
+//                                        }else{
+//                                            throw new Exception("Not enough balance");
+//                                        }
+//                                    }else{
+//                                        throw new Exception("Wrong PIN");
+//                                    }
                                     break;
                                 case HasPaid:
                                     firstDisplayString = "To Be Paid:";
                                     secondDisplayString = "";
                                     thirdDisplayString = "";
+                                    status = STATUS.ToBePaid;
+                                    break;
+                                case Message:
                                     status = STATUS.ToBePaid;
                                     break;
                             }
@@ -278,14 +355,15 @@ public class PaymentTerminal extends JPanel implements ActionListener, BaseTermi
     JTextField firstDisplay;
     JPanel keypad;
     STATUS status = STATUS.ToBePaid;
-    int amountToBePaid = 0;
+    static private final byte WITHDR_CLA = (byte) 0xd3;
+    short amountToBePaid = 0;
     boolean isERROR = false;
 
     enum STATUS{
         ToBePaid,
         InputPIN,
-        ERROR,
-        HasPaid;
+        Message,
+        HasPaid
     }
 
 }

@@ -8,6 +8,7 @@ public class Logger {
     private Map<Short, Short> pin_map;
     private Map<Short, Object> exp_map;
     private Map<Short, Object> mod_map;
+    private Map<Short, byte[]> sec_map = new HashMap<>();
 
     public Logger(){
         this.pin_map = new HashMap<>();
@@ -27,6 +28,10 @@ public class Logger {
         mod_map.put(card_number, mod);
     }
 
+    public void SaveSec(short card_number, byte[] sec){
+        sec_map.put(card_number, sec);
+    }
+
     public short getPin(short card_number){
         return pin_map.get(card_number);
     }
@@ -34,4 +39,6 @@ public class Logger {
     public byte[] getExp(short card_number){return (byte[]) exp_map.get(card_number);}
 
     public byte[] getMod(short card_number){return (byte[]) mod_map.get(card_number);}
+
+    public byte[] getSec(short card_number){return sec_map.get(card_number);}
 }
