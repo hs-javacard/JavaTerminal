@@ -29,6 +29,13 @@ public class Logger {
         this.logPath = "log.txt";
     }
 
+    /**
+     * Log request by terminal.
+     *
+     * @param card_number of interacting card
+     * @param message chosen out of the static messages above
+     * @param protocol executing when the log request was done
+     */
     public void logRequest(short card_number, String message, String protocol){
         String content = card_number + ' ' + message + ' ' + protocol + ' ' + getTS();
 
@@ -39,6 +46,13 @@ public class Logger {
         }
     }
 
+    /**
+     * Log request by terminal (signed).
+     * @param card_number of interacting card
+     * @param message chosen out of the static messages above
+     * @param amount which needs to be signed and hashed for integrity
+     * @param protocol executing when the log request was done
+     */
     public void logRequestSigned(short card_number, String message, String amount, String protocol) {
         String content = "SIGNED: " + card_number + ' ' + message + ' ' + amount + ' ' + protocol + ' ' + getTS();
         try {
@@ -48,6 +62,10 @@ public class Logger {
         }
     }
 
+    /**
+     * Gives a fresh timestamp
+     * @return timestamp (in milliseconds)
+     */
     private Timestamp getTS() {
         return new Timestamp(System.currentTimeMillis());
     }
