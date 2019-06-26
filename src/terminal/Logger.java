@@ -2,18 +2,9 @@ package terminal;
 
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ArrayList;
 
 public class Logger {
 
-//<<<<<<< HEAD
-//    private Map<Short, Short> pin_map;
-//    private Map<Short, Object> exp_map;
-//    private Map<Short, Object> mod_map;
-//    private Map<Short, byte[]> sec_map = new HashMap<>();
-//=======
     static String NEWCARDNUMBER;
     static String NEWCARD;
     static String NEWREQUEST;
@@ -24,7 +15,6 @@ public class Logger {
     static String PINCHANGE;
 
     private String logPath;
-//>>>>>>> master
 
     public Logger(){
         NEWCARDNUMBER = "New Card Number";
@@ -50,7 +40,7 @@ public class Logger {
     }
 
     public void logRequestSigned(short card_number, String message, String amount, String protocol) {
-        String content = card_number + ' ' + message + ' ' + amount + ' ' + protocol + ' ' + getTS();
+        String content = "SIGNED: " + card_number + ' ' + message + ' ' + amount + ' ' + protocol + ' ' + getTS();
         try {
             FileWriter.write(content,logPath);
         } catch (IOException e) {
@@ -58,23 +48,7 @@ public class Logger {
         }
     }
 
-//<<<<<<< HEAD
-//    public void SaveSec(short card_number, byte[] sec){
-//        sec_map.put(card_number, sec);
-//    }
-//
-//    public short getPin(short card_number){
-//        return pin_map.get(card_number);
-//    }
-//
-//    public byte[] getExp(short card_number){return (byte[]) exp_map.get(card_number);}
-//
-//    public byte[] getMod(short card_number){return (byte[]) mod_map.get(card_number);}
-//
-//    public byte[] getSec(short card_number){return sec_map.get(card_number);}
-//=======
     private Timestamp getTS() {
         return new Timestamp(System.currentTimeMillis());
     }
-//>>>>>>> master
 }
