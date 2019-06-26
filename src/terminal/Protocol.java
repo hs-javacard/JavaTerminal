@@ -9,6 +9,7 @@ import javacardx.crypto.Cipher;
 import javax.smartcardio.ResponseAPDU;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Random;
 
 import static terminal.Communication.byteArrayToHex;
 
@@ -30,6 +31,8 @@ public class Protocol  implements ISO7816{
     private AESKey sharedKey = (AESKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128,
             false);
     private Cipher aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+    Random rand = new Random();
+
 
     private byte[] ivdata = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -59,7 +62,9 @@ public class Protocol  implements ISO7816{
 
     }
 
-    //Initialization protocol
+    // Initialization protocol, the bank supplies a card number, which is sent to the card alongside a pin code,
+    // the balance, soft- and hard limit.
+    // The card responds with its public key, which is saved by the bank.
     public void initialization(short balance, short soft_limit, short hard_limit){
         System.out.println("[TERMINAL]: Initialization: Balance = " + balance + ", Soft Limit = " + soft_limit +
                 ", Hard Limit = " + hard_limit);
@@ -103,6 +108,10 @@ public class Protocol  implements ISO7816{
 
     }
 
+    // The users' entered pin is sent to the card. The card responds with a status code that shows if the pin matched.
+    // The status code 0 means the pin was right,
+    // status code -1 means the pin was wrong, but the user has more tries left
+    // status code -2 means the pin was wrong, and there are no tries remaining. In this case the card is locked by the bank
     public boolean checkPin(byte cla, short pin, byte ins) {
         byte[] plain_text = new byte[4];
         Util.setShort(plain_text, (short) 0, nonce);
@@ -122,7 +131,7 @@ public class Protocol  implements ISO7816{
         short card_nonce = Util.getShort(plain_response, (short) (1));
         short status_code = (short) plain_response[3];
 
-        if(status_code != 0 || !Verify_Nonce(card_nonce)){
+        if(status_code != 1 || !Verify_Nonce(card_nonce)){
             if (status_code == -2) { // lock the card
                 bank.updateStateCard(cardNumber, new byte[]{1});
             }
@@ -143,6 +152,8 @@ public class Protocol  implements ISO7816{
         }
     }
 
+
+    // This is the actual withdrawal protocol, the pin has been checked at this point, if it was necessary.
     public WithdrawResult withdraw(){
         byte[] buffer = new byte[2];
         Util.setShort(buffer, (short) 0,  nonce); // nonce
@@ -167,7 +178,7 @@ public class Protocol  implements ISO7816{
 
     }
 
-    //Authentication protocol
+    //Authentication protocol, this is sharing the symmetric key, and checking the PIN
     public boolean authentication(byte cla, short pin){
 
         if(Share_Sym_Key(cla)){
@@ -177,14 +188,15 @@ public class Protocol  implements ISO7816{
         }
     }
 
-    //Withdrawal protocol
+    // Withdrawal protocol, the symmetrical key is shared, and then the withdrawal information is sent.
+    // The card notifies if the users PIN should be asked. The status code is returned, and the terminal can then
+    // decide to continue withdrawing, or asking for a PIN.
     public int withdrawal_checklimits(int payment){
         System.out.println("[TERMINAL]: Payment = " + payment);
         System.out.println("[TERMINAL]: nonce send = " + nonce);
 
         //Generate & share symmetrical key
         if(Share_Sym_Key(WITHDR_CLA)){
-            System.out.println("-------------------- T → C: (nPT ++ “Withdrawal / Payment” ++ “amount” ++ “TSpt”)symTC --------------------");
 
             short day = (short) cal.get(Calendar.DAY_OF_YEAR);
             short year = (short) cal.get(Calendar.YEAR);
@@ -502,10 +514,9 @@ public class Protocol  implements ISO7816{
     }
 
 
+
     public short getNewPin(){
-        byte[] d = new byte[2];
-        random.generateData(d, (short) 0, (short) 2);
-        return Util.getShort(d, (short) 0);
+        return (short) rand.nextInt(9999);
     }
     public void printBytes(byte[] buffer){
         System.out.println(byteArrayToHex(buffer));

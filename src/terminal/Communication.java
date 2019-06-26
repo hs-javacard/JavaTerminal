@@ -19,8 +19,6 @@ public class Communication {
 
 
     public void init(){
-//        sim.installApplet(appletAID, EPApplet.class);
-//        sim.selectApplet(appletAID);
     }
 
     public ResponseAPDU sendINS(byte ins){
