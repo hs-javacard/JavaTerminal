@@ -61,6 +61,7 @@ public class InitializationTerminal extends JPanel implements ActionListener, Ba
             }
         } catch (Exception e) {
             System.out.println("ERROR: Press the save button to reset");
+            e.printStackTrace();
             setTextFieldsToERROR();
         }
     }

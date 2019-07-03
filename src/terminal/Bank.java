@@ -6,12 +6,14 @@ public class Bank {
 
     private Map<Short, Map<Short, ArrayList<byte[]>>> cardList;
     private Map<Short, ArrayList<byte[]>> banValue;
-    private ArrayList<byte[]> otherInfo;
+    private Random r = new Random();
+    private Map<Short, Holder> publickeys;
+
 
     public Bank() {
         this.cardList = new HashMap<>();
         this.banValue = new HashMap<>();
-        this.otherInfo = new ArrayList<>();
+        this.publickeys = new HashMap<>();
     }
 
     /**
@@ -21,10 +23,11 @@ public class Bank {
      * @return new card number
      */
     public short generateCardNumber() {
-        short cn = 9; //TODO random cn
-        short ban = 1; //TODO random ban
+        short cn = (short) r.nextInt(1000);
+        short ban = (short) r.nextInt(100);
 
         //Dummy values (null)
+        ArrayList<byte[]> otherInfo = new ArrayList<>();
         otherInfo.add(0,null); //EXP
         otherInfo.add(1,null); //MOD
         otherInfo.add(2,null); //STATE
@@ -54,11 +57,14 @@ public class Bank {
         byte[] state = new byte[1];// TODO set card state to ready, we for now assume this 0 means unlocked
         short linkedBan = getBan(cn);
 
+        publickeys.put(cn, new Holder(exp, mod, sec, state));
+
         if (cardList.containsKey(cn) && banValue.containsKey(linkedBan)) {
-            otherInfo.set(0, exp);
-            otherInfo.set(1, mod);
-            otherInfo.set(2, state);
-            otherInfo.set(3, sec);
+            ArrayList<byte[]> otherInfo = new ArrayList<>();
+            otherInfo.add(exp);
+            otherInfo.add(mod);
+            otherInfo.add(state);
+            otherInfo.add(sec);
 
             banValue.put(linkedBan, otherInfo);
             cardList.put(cn, banValue);
@@ -88,6 +94,10 @@ public class Bank {
 
     }
 
+    public Holder getCardInfo2(short cn) {
+        return publickeys.get(cn);
+    }
+
     /**
      * Update state of card.
      *
@@ -113,5 +123,35 @@ public class Bank {
         newBanValues = cardList.get(cn).keySet().toArray();
 
         return (Short) newBanValues[0];
+    }
+
+    class Holder {
+        byte[] exp;
+        byte[] mod;
+        byte[] secret;
+        byte[] state;
+
+        public Holder(byte[] exp, byte[] mod, byte[] secret, byte[] state) {
+            this.exp = exp;
+            this.mod = mod;
+            this.secret = secret;
+            this.state = state;
+        }
+
+        public byte[] getExp() {
+            return exp;
+        }
+
+        public byte[] getMod() {
+            return mod;
+        }
+
+        public byte[] getSecret() {
+            return secret;
+        }
+
+        public byte[] getState() {
+            return state;
+        }
     }
 }

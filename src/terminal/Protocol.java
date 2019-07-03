@@ -102,6 +102,11 @@ public class Protocol  implements ISO7816{
         public_key_card.setExponent(exp, (short) 0, exp_size);
         public_key_card.setModulus(mod, (short) 0, mod_size);
 
+        System.out.print("Exponent: ");
+        printBytes(exp);
+        System.out.print("Modulus: ");
+        printBytes(mod);
+
         bank.setCardInfo(card_number, exp, mod, secret);
 
         log.logRequest(card_number, Logger.NEWCARD, "INIT");
@@ -410,8 +415,13 @@ public class Protocol  implements ISO7816{
         short card_number = Util.getShort(response.getData(), (short) 128);
         cardNumber = card_number;
         // Get the public key of the card
-        byte[] exp = bank.getCardInfo(card_number).get(0); // exp
-        byte[] mod = bank.getCardInfo(card_number).get(1); // mod
+        byte[] exp = bank.getCardInfo2(card_number).getExp(); // exp
+        byte[] mod = bank.getCardInfo2(card_number).getMod(); // mod
+
+        System.out.print("Exponent: ");
+        printBytes(exp);
+        System.out.print("Modulus: ");
+        printBytes(mod);
 
         log.logRequest(card_number, Logger.NEWREQUEST, "AUTH");
 
@@ -431,7 +441,7 @@ public class Protocol  implements ISO7816{
             return false;
         }
 
-        byte[] status = bank.getCardInfo(card_number).get(2);
+        byte[] status = bank.getCardInfo2(card_number).getState();
         if (status[0] == 1) {
             System.out.println("Card is locked");
             log.logRequest(card_number, Logger.LOCKEDATTEMPT, "AUTH");
@@ -454,7 +464,7 @@ public class Protocol  implements ISO7816{
         Util.arrayCopy(theKey, (short) 0, plain_text,(short) 2, (short) 16);
 
 
-        byte[] secret = bank.getCardInfo(card_number).get(3);
+        byte[] secret = bank.getCardInfo2(card_number).getSecret();
         Util.arrayCopy(secret, (short) 0, plain_text, (short) 18, (short) 16);
 
         byte[] cipher = RSA_encrypt(public_key_card, plain_text);
@@ -543,3 +553,6 @@ public class Protocol  implements ISO7816{
 }
 
 
+/*
+Card blocking
+ */
